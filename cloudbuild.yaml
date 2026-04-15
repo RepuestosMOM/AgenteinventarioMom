@@ -1,28 +1,43 @@
 steps:
-  # 1. Instalar dependencias si las hubiera
+  # 1. Ejecutar pruebas unitarias o de sintaxis antes de compilar
   - name: 'python:3.10-slim'
+    id: CI-Syntax-Check
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         pip install -r requirements.txt
+        python -m py_compile main.py
+        echo "Validación OK"
 
-  # 2. Paso de validación/pruebas (Integración Continua)
-  # Aquí verificaremos al menos que Python pueda compilar tu código de conexión con Odoo
-  - name: 'python:3.10-slim'
-    entrypoint: 'bash'
+  # 2. Construir la imagen de Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Docker-Build
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA', '.']
+
+  # 3. Subir (Push) la imagen a Google Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Docker-Push
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA']
+
+  # 4. Desplegar en Cloud Run (Actualiza automáticamente el servicio en vivo)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Cloud-Run-Deploy
+    entrypoint: gcloud
     args:
-      - '-c'
-      - |
-        python -m py_compile odoo_test.py
-        echo "Validación de sintaxis completada con éxito."
+      - 'run'
+      - 'deploy'
+      - 'agente-inventario-srv'
+      - '--image'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--allow-unauthenticated'
 
-  # TODO: 3. Paso de Despliegue (Continuous Deployment)
-  # Este paso se habilitará cuando definas la infraestructura exacta en GCP (Cloud Run, Functions, etc)
-  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  #   entrypoint: gcloud
-  #   args: ['run', 'deploy', 'agente-inventario', '--source', '.']
+# Para habilitar la recolección de las imágenes
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
 
-timeout: '600s'
+timeout: '900s'
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -1,4 +1,2 @@
-# Este proyecto actualmente solo usa módulos estándar (xmlrpc.client) 
-# Agregar dependencias aquí cuando sea necesario, por ejemplo:
-# flask==3.0.0
-# requests==2.31.0
+fastapi
+uvicorn

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario | Agente MOM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-car-side"></i></div>
+                <h2>Repuestos<span class="highlight">MOM</span></h2>
+            </div>
+            
+            <nav class="menu">
+                <a href="#" class="active"><i class="fa-solid fa-robot"></i> Asistente de Inventario</a>
+                <a href="#"><i class="fa-solid fa-boxes-stacked"></i> Catálogo Completo</a>
+                <a href="#"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+            </nav>
+            
+            <div class="system-status">
+                <p>Odoo ERP Connection</p>
+                <div class="status-indicator">
+                    <span class="dot"></span> Online
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="agent-info">
+                    <img src="https://ui-avatars.com/api/?name=MOM+Agent&background=0D8ABC&color=fff&rounded=true" alt="Agent MOM" class="avatar">
+                    <div>
+                        <h1>Agente MOM</h1>
+                        <p class="subtitle">Búsqueda inteligente con lenguaje natural</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" title="Limpiar Chat" onclick="clearChat()"><i class="fa-solid fa-trash"></i></button>
+                    <button class="icon-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+                </div>
+            </header>
+
+            <div class="messages-container" id="chat-box">
+                <!-- Bienvenida del bot -->
+                <div class="message bot-message">
+                    <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
+                    <div class="msg-bubble">
+                        <p>¡Hola! Soy el Agente Virtual de <strong>Repuestos MOM</strong>. Estoy conectado directamente a nuestra base de Odoo.</p>
+                        <p>Puedes preguntarme por repuestos que necesites, por ejemplo:</p>
+                        <ul>
+                            <li><em>"¿Tienes termostatos para Toyota?"</em></li>
+                            <li><em>"Stock del código 020621057"</em></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <form id="chat-form">
+                    <div class="input-wrapper">
+                        <button type="button" class="attachment-btn"><i class="fa-solid fa-paperclip"></i></button>
+                        <input type="text" id="user-input" placeholder="Pregunta por disponibilidad de repuestos..." autocomplete="off">
+                        <button type="submit" class="send-btn" id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </form>
+                <div class="footer-text">
+                    La IA puede cometer errores. Verifica códigos críticos antes de generar la orden.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cargar JS desde las rutas estáticas configuradas en FastAPI -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
