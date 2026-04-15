@@ -10,6 +10,15 @@ steps:
         python -m py_compile main.py
         echo "Validación OK"
 
+  # 1.5 Crear repositorio Artifact Registry si no existe (GitOps CLI)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Create-Artifact-Repo
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud artifacts repositories create mom-repo --repository-format=docker --location=us-central1 --description="Auto-creado por Pipeline CLI" || echo "El repositorio ya existe. Continuando con la compilación..."
+
   # 2. Construir la imagen de Docker
   - name: 'gcr.io/cloud-builders/docker'
     id: Docker-Build
