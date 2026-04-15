@@ -13,12 +13,12 @@ steps:
   # 2. Construir la imagen de Docker
   - name: 'gcr.io/cloud-builders/docker'
     id: Docker-Build
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA', '.']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest', '.']
 
   # 3. Subir (Push) la imagen a Google Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: Docker-Push
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest']
 
   # 4. Desplegar en Cloud Run (Actualiza automáticamente el servicio en vivo)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -29,14 +29,14 @@ steps:
       - 'deploy'
       - 'agente-inventario-srv'
       - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest'
       - '--region'
       - 'us-central1'
       - '--allow-unauthenticated'
 
 # Para habilitar la recolección de las imágenes
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest'
 
 timeout: '900s'
 options:
