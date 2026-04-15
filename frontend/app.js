@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Load saved theme
-    if (localStorage.getItem('theme') === 'dark' || (!window.localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || !savedTheme) {
         document.documentElement.setAttribute('data-theme', 'dark');
         themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
     }
