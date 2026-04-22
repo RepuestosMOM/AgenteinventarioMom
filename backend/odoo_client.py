@@ -1,10 +1,17 @@
+
 import xmlrpc.client
 import os
+import logging
+
+log = logging.getLogger(__name__)
 
 URL      = os.environ.get('ODOO_URL',  'https://www.repuestosmom.cl')
 DB       = os.environ.get('ODOO_DB',   'repuestosmom-mom-main-25810633')
 USERNAME = os.environ.get('ODOO_USER', 'cio@repuestosmom.cl')
 PASSWORD = os.environ.get('ODOO_PASS', '95512ac750d1fad3accc6b498a6490d9ef24f2f3')
+
+_uid     = None
+_models  = None
 
 # ─────────────────────────────────────────────────────────────────
 # MAPEO TÉCNICO — Sprint 1 (verificado contra Odoo 19)
@@ -42,15 +49,20 @@ PRODUCT_FIELDS = [
 
 
 def get_connection():
+    global _uid, _models
+    if _uid is not None:
+        return _uid, _models
     try:
         common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(URL))
         uid = common.authenticate(DB, USERNAME, PASSWORD, {})
         if not uid:
             raise Exception("Credenciales incorrectas")
-        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(URL))
-        return uid, models
+        _uid = uid
+        _models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(URL))
+        log.info("Conectado a Odoo (UID: %s)", _uid)
+        return _uid, _models
     except Exception as e:
-        print(f"Error conectando a Odoo: {e}")
+        log.error("Error conectando a Odoo: %s", e)
         return None, None
 
 
