@@ -1,6 +1,14 @@
 import os
 import logging
+import tempfile
 import vertexai
+
+_creds_json = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+if _creds_json:
+    _tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+    _tmp.write(_creds_json)
+    _tmp.close()
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = _tmp.name
 from vertexai.generative_models import (
     GenerativeModel,
     FunctionDeclaration,
