@@ -6,8 +6,8 @@ from backend.odoo_client import (
     format_product,
 )
 
-# Patrones que sugieren búsqueda por OEM (código numérico o alfanumérico largo)
-_OEM_PATTERN = re.compile(r'\b[A-Z0-9]{6,}\b', re.IGNORECASE)
+# OEM real: debe contener al menos un dígito (ej. 96445053, AB1234X)
+_OEM_PATTERN = re.compile(r'\b(?=[A-Z0-9]*\d)[A-Z0-9]{5,}\b', re.IGNORECASE)
 
 # Modelos de vehículos comunes para detectar búsqueda por modelo
 _VEHICLE_KEYWORDS = [
@@ -18,6 +18,9 @@ _VEHICLE_KEYWORDS = [
     'accent', 'tucson', 'santa fe',
     'logan', 'duster', 'sandero',
     'partner', 'berlingo',
+    'chevrolet', 'n-300', 'n300', 'dmax', 'luv',
+    'toyota', 'ford', 'hyundai', 'kia', 'renault', 'peugeot', 'suzuki',
+    'nissan', 'mazda', 'mitsubishi', 'volkswagen', 'vw',
 ]
 
 
