@@ -1,35 +1,48 @@
 steps:
-  # 1. Ejecutar pruebas unitarias o de sintaxis antes de compilar
+  # 1. Validar sintaxis Python
   - name: 'python:3.10-slim'
     id: CI-Syntax-Check
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        pip install -r requirements.txt
-        python -m py_compile main.py
-        echo "Validación OK"
+        pip install -r requirements.txt --quiet
+        python -m py_compile main.py backend/agent.py backend/odoo_client.py
+        echo "✅ Validación de sintaxis OK"
 
-  # 1.5 Crear repositorio Artifact Registry si no existe (GitOps CLI)
+  # 2. Crear repositorio Artifact Registry si no existe
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: Create-Artifact-Repo
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        gcloud artifacts repositories create mom-repo --repository-format=docker --location=us-central1 --description="Auto-creado por Pipeline CLI" || echo "El repositorio ya existe. Continuando con la compilación..."
+        gcloud artifacts repositories create mom-repo \
+          --repository-format=docker \
+          --location=us-central1 \
+          --description="Agente Inventario MOM" \
+          || echo "Repositorio ya existe, continuando..."
 
-  # 2. Construir la imagen de Docker
+  # 3. Build de la imagen Docker
   - name: 'gcr.io/cloud-builders/docker'
     id: Docker-Build
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest', '.']
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest'
+      - '.'
 
-  # 3. Subir (Push) la imagen a Google Artifact Registry
+  # 4. Push imagen a Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: Docker-Push
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest']
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario'
 
-  # 4. Desplegar en Cloud Run (Actualiza automáticamente el servicio en vivo)
+  # 5. Deploy en Cloud Run con credenciales Odoo como env vars
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: Cloud-Run-Deploy
     entrypoint: gcloud
@@ -38,13 +51,19 @@ steps:
       - 'deploy'
       - 'agente-inventario-srv'
       - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
       - '--region'
       - 'us-central1'
       - '--allow-unauthenticated'
+      - '--platform'
+      - 'managed'
+      - '--memory'
+      - '512Mi'
+      - '--set-env-vars'
+      - 'ODOO_URL=https://www.repuestosmom.cl,ODOO_DB=repuestosmom-mom-main-25810633,ODOO_USER=cio@repuestosmom.cl,ODOO_PASS=95512ac750d1fad3accc6b498a6490d9ef24f2f3'
 
-# Para habilitar la recolección de las imágenes
 images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:latest'
 
 timeout: '900s'

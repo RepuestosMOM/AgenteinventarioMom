@@ -7,6 +7,11 @@ import os
 
 app = FastAPI(title="Agente MOM API")
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Modelo de datos para la API
 class ChatRequest(BaseModel):
     message: str
