@@ -1,4 +1,12 @@
-import re
+import os
+import logging
+import vertexai
+from vertexai.generative_models import (
+    GenerativeModel,
+    FunctionDeclaration,
+    Tool,
+    Part,
+)
 from backend.odoo_client import (
     search_products,
     search_oem,
@@ -6,91 +14,142 @@ from backend.odoo_client import (
     format_product,
 )
 
-# OEM real: debe contener al menos un dígito (ej. 96445053, AB1234X)
-_OEM_PATTERN = re.compile(r'\b(?=[A-Z0-9]*\d)[A-Z0-9]{5,}\b', re.IGNORECASE)
+log = logging.getLogger(__name__)
 
-# Modelos de vehículos comunes para detectar búsqueda por modelo
-_VEHICLE_KEYWORDS = [
-    'aveo', 'sail', 'spark', 'corsa', 'astra', 'cruze', 'tracker',
-    'corolla', 'yaris', 'hilux', 'rav4', 'fortuner', 'land cruiser',
-    'focus', 'fiesta', 'ranger', 'ecosport', 'escape',
-    'rio', 'cerato', 'sportage', 'sorento', 'picanto',
-    'accent', 'tucson', 'santa fe',
-    'logan', 'duster', 'sandero',
-    'partner', 'berlingo',
-    'chevrolet', 'n-300', 'n300', 'dmax', 'luv',
-    'toyota', 'ford', 'hyundai', 'kia', 'renault', 'peugeot', 'suzuki',
-    'nissan', 'mazda', 'mitsubishi', 'volkswagen', 'vw',
-]
+PROJECT_ID = os.environ.get('GCP_PROJECT', 'inteligencia-mom')
+LOCATION   = os.environ.get('GCP_LOCATION', 'us-central1')
+MODEL_ID   = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-001')
+
+vertexai.init(project=PROJECT_ID, location=LOCATION)
+
+SYSTEM_PROMPT = """Eres el Asistente Virtual de Repuestos MOM, una tienda especializada en repuestos automotrices ubicada en Chile.
+
+CONTEXTO:
+- El inventario está gestionado en Odoo 19
+- Los precios están en pesos chilenos (CLP)
+- El stock indica unidades disponibles en bodega
+- Los atributos técnicos disponibles son: Código OEM, Modelo, Tipo de vehículo, Diámetro interior, Diámetro externo, Espesor
+
+MARCAS Y MODELOS QUE MANEJAMOS:
+Chevrolet (Aveo, Sail, Spark, Corsa, Cruze, Tracker, N-300, D-Max, LUV), Toyota (Corolla, Yaris, Hilux, RAV4, Fortuner), Ford (Focus, Fiesta, Ranger, EcoSport), Hyundai (Accent, Tucson, Santa Fe), Kia (Rio, Cerato, Sportage, Sorento, Picanto), Renault (Logan, Duster, Sandero), Peugeot (Partner, Berlingo), Suzuki, Nissan, Mazda, Mitsubishi, Volkswagen.
+
+INSTRUCCIONES:
+1. Analiza la consulta del cliente con precisión — identifica el repuesto, la marca Y el modelo específico del vehículo
+2. Usa las herramientas para buscar en el inventario antes de responder
+3. Presenta resultados de forma clara: nombre, código, stock y precio
+4. Si no hay stock (stock=0), menciónalo explícitamente
+5. Si no hay resultados, sugiere una búsqueda alternativa
+6. Responde siempre en español, de forma profesional y concisa
+"""
+
+_tools = Tool(function_declarations=[
+    FunctionDeclaration(
+        name="buscar_producto",
+        description="Busca repuestos en el inventario por nombre de la pieza o código interno. Usar para búsquedas generales cuando no se menciona marca/modelo ni código OEM.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "keyword": {
+                    "type": "string",
+                    "description": "Nombre del repuesto a buscar (ej: 'amortiguador trasero', 'termostato', 'pastillas freno')"
+                }
+            },
+            "required": ["keyword"]
+        }
+    ),
+    FunctionDeclaration(
+        name="buscar_oem",
+        description="Busca un repuesto por su código OEM (referencia del fabricante original). Usar cuando el cliente proporciona un código alfanumérico con números (ej: 96445053, AB12345).",
+        parameters={
+            "type": "object",
+            "properties": {
+                "codigo_oem": {
+                    "type": "string",
+                    "description": "Código OEM del repuesto (ej: '96445053', '12380318')"
+                }
+            },
+            "required": ["codigo_oem"]
+        }
+    ),
+    FunctionDeclaration(
+        name="buscar_por_modelo",
+        description="Busca repuestos compatibles con un modelo o marca de vehículo específico. Usar cuando el cliente menciona marca, modelo o tipo de vehículo.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "modelo": {
+                    "type": "string",
+                    "description": "Marca o modelo del vehículo (ej: 'N-300', 'Hilux', 'Aveo', 'Chevrolet')"
+                },
+                "repuesto": {
+                    "type": "string",
+                    "description": "Tipo de repuesto que busca (ej: 'amortiguador', 'termostato'). Opcional."
+                }
+            },
+            "required": ["modelo"]
+        }
+    ),
+])
+
+_model = GenerativeModel(
+    MODEL_ID,
+    system_instruction=SYSTEM_PROMPT,
+    tools=[_tools],
+)
 
 
-def _detect_intent(msg: str):
-    """
-    Retorna ('oem', code) | ('model', name) | ('general', keyword)
-    """
-    msg_lower = msg.lower()
+def _execute_tool(name: str, args: dict) -> str:
+    if name == "buscar_producto":
+        keyword = args.get("keyword", "")
+        items = search_products(keyword, limit=5)
+    elif name == "buscar_oem":
+        items = search_oem(args.get("codigo_oem", ""), limit=5)
+    elif name == "buscar_por_modelo":
+        modelo = args.get("modelo", "")
+        repuesto = args.get("repuesto", "")
+        keyword = f"{repuesto} {modelo}".strip() if repuesto else modelo
+        items = search_by_model(keyword, limit=5)
+    else:
+        return "Herramienta no reconocida."
 
-    # Detectar modelo de vehículo
-    for vehicle in _VEHICLE_KEYWORDS:
-        if vehicle in msg_lower:
-            return 'model', vehicle
+    if not items:
+        return "No se encontraron productos en el inventario para esa búsqueda."
 
-    # Detectar código OEM (secuencia alfanumérica ≥ 6 chars sin espacios)
-    oem_match = _OEM_PATTERN.search(msg)
-    if oem_match:
-        return 'oem', oem_match.group(0)
-
-    # Búsqueda general: quitar palabras conversacionales
-    stopwords = {
-        'buscar', 'busco', 'tienen', 'tienes', 'quiero', 'necesito',
-        'precio', 'cuánto', 'cuanto', 'vale', 'hay', 'el', 'la', 'los',
-        'las', 'un', 'una', 'repuesto', 'repuestos', 'de', 'para', 'por',
-        'favor', 'oem', 'codigo', 'código', 'referencia',
-    }
-    words = [w for w in re.split(r'\W+', msg_lower) if w and w not in stopwords]
-    keyword = ' '.join(words).strip()
-    return 'general', keyword
+    result = f"Se encontraron {len(items)} resultado(s):\n\n"
+    for p in items:
+        result += format_product(p) + "\n\n---\n\n"
+    return result
 
 
 def chat_with_agent(user_message: str) -> str:
-    msg = user_message.lower()
+    try:
+        chat = _model.start_chat()
+        response = chat.send_message(user_message)
 
-    if 'hola' in msg or 'saludos' in msg:
-        return '¡Hola! Soy el Agente Virtual de Repuestos MOM. ¿Qué repuesto estás buscando hoy?'
+        for _ in range(5):
+            function_calls = [
+                part.function_call
+                for part in response.candidates[0].content.parts
+                if hasattr(part, 'function_call') and part.function_call.name
+            ]
 
-    if 'ayuda' in msg:
-        return (
-            'Puedo ayudarte a consultar partes, precios e inventario. '
-            'Dime qué buscas, por ejemplo:\n'
-            '- "Busco termostato para Aveo"\n'
-            '- "Código OEM 96445053"\n'
-            '- "¿Tienen pastillas para Hilux?"'
-        )
+            if not function_calls:
+                break
 
-    intent, value = _detect_intent(user_message)
+            function_responses = []
+            for fc in function_calls:
+                tool_result = _execute_tool(fc.name, dict(fc.args))
+                function_responses.append(
+                    Part.from_function_response(
+                        name=fc.name,
+                        response={"result": tool_result}
+                    )
+                )
 
-    if not value:
-        return '¿Podrías ser más específico con qué repuesto estás buscando?'
+            response = chat.send_message(function_responses)
 
-    if intent == 'oem':
-        items = search_oem(value, limit=5)
-        label = f'OEM `{value}`'
-    elif intent == 'model':
-        items = search_by_model(value, limit=5)
-        label = f'vehículo "{value}"'
-    else:
-        items = search_products(value, limit=5)
-        label = f'"{value}"'
+        return response.text
 
-    if not items:
-        return (
-            f'Lo siento, no encontré coincidencias para {label} en nuestro inventario. '
-            '¿Tienes el código interno o OEM exacto?'
-        )
-
-    response = f'Encontré **{len(items)}** resultado(s) para {label}:\n\n'
-    for p in items:
-        response += format_product(p) + '\n\n---\n\n'
-
-    response += '¿Deseas buscar algo más?'
-    return response
+    except Exception as e:
+        log.error("Error en chat_with_agent: %s", e)
+        return "Lo siento, tuve un problema procesando tu consulta. Por favor intenta nuevamente."
