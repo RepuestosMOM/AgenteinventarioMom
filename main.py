@@ -2,8 +2,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from backend.agent import chat_with_agent
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
+
+from backend.agent import chat_with_agent
 
 app = FastAPI(title="Agente MOM API")
 

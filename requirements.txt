@@ -3,3 +3,4 @@ uvicorn[standard]>=0.29.0
 python-multipart>=0.0.9
 aiofiles>=23.2.1
 google-cloud-aiplatform>=1.60.0
+python-dotenv>=1.0.0

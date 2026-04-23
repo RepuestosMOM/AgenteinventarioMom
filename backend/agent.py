@@ -24,9 +24,9 @@ from backend.odoo_client import (
 
 log = logging.getLogger(__name__)
 
-PROJECT_ID = os.environ.get('GCP_PROJECT', 'inteligencia-mom')
+PROJECT_ID = os.environ.get('GCP_PROJECT', 'agente-inventario-mom')
 LOCATION   = os.environ.get('GCP_LOCATION', 'us-central1')
-MODEL_ID   = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-001')
+MODEL_ID   = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash-002')
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
