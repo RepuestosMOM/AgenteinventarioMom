@@ -5,13 +5,19 @@ import logging
 
 log = logging.getLogger(__name__)
 
-URL      = os.environ.get('ODOO_URL',  'https://www.repuestosmom.cl')
-DB       = os.environ.get('ODOO_DB',   'repuestosmom-mom-main-25810633')
-USERNAME = os.environ.get('ODOO_USER', 'cio@repuestosmom.cl')
-PASSWORD = os.environ.get('ODOO_PASS', '95512ac750d1fad3accc6b498a6490d9ef24f2f3')
+URL      = os.environ.get('ODOO_URL')
+DB       = os.environ.get('ODOO_DB')
+USERNAME = os.environ.get('ODOO_USER')
+PASSWORD = os.environ.get('ODOO_PASS')
 
 _uid     = None
 _models  = None
+
+
+def _reset_connection():
+    global _uid, _models
+    _uid = None
+    _models = None
 
 # ─────────────────────────────────────────────────────────────────
 # MAPEO TÉCNICO — Sprint 1 (verificado contra Odoo 19)
@@ -48,10 +54,13 @@ PRODUCT_FIELDS = [
 ]
 
 
-def get_connection():
+def get_connection(retry: bool = True):
     global _uid, _models
     if _uid is not None:
         return _uid, _models
+    if not all([URL, DB, USERNAME, PASSWORD]):
+        log.error("Faltan variables de entorno ODOO_URL, ODOO_DB, ODOO_USER o ODOO_PASS")
+        return None, None
     try:
         common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(URL))
         uid = common.authenticate(DB, USERNAME, PASSWORD, {})
@@ -66,6 +75,20 @@ def get_connection():
         return None, None
 
 
+def _execute_with_reconnect(models, uid, model, method, args, kwargs):
+    """Ejecuta una llamada XML-RPC y reconecta automáticamente si la sesión expiró."""
+    try:
+        return models.execute_kw(DB, uid, PASSWORD, model, method, args, kwargs)
+    except Exception as e:
+        if 'session' in str(e).lower() or 'access' in str(e).lower() or 'auth' in str(e).lower():
+            log.warning("Sesión Odoo expirada, reconectando...")
+            _reset_connection()
+            new_uid, new_models = get_connection()
+            if new_uid:
+                return new_models.execute_kw(DB, new_uid, PASSWORD, model, method, args, kwargs)
+        raise
+
+
 def _get_product_attributes(models, uid, product_ids: list) -> dict:
     """
     Dado una lista de product.product IDs, retorna sus atributos técnicos
@@ -75,7 +98,7 @@ def _get_product_attributes(models, uid, product_ids: list) -> dict:
         return {}
 
     # Obtener los template IDs correspondientes
-    products = models.execute_kw(DB, uid, PASSWORD,
+    products = _execute_with_reconnect(models, uid,
         'product.product', 'read',
         [product_ids],
         {'fields': ['product_tmpl_id']})
@@ -83,7 +106,7 @@ def _get_product_attributes(models, uid, product_ids: list) -> dict:
     tmpl_ids = list(set(tmpl_map.values()))
 
     # Buscar líneas de atributos para esos templates
-    attr_lines = models.execute_kw(DB, uid, PASSWORD,
+    attr_lines = _execute_with_reconnect(models, uid,
         'product.template.attribute.line', 'search_read',
         [[('product_tmpl_id', 'in', tmpl_ids),
           ('attribute_id', 'in', [ATTR_OEM, ATTR_MODELO, ATTR_TIPO_VEH,
@@ -98,7 +121,7 @@ def _get_product_attributes(models, uid, product_ids: list) -> dict:
     if not all_value_ids:
         return {}
 
-    values = models.execute_kw(DB, uid, PASSWORD,
+    values = _execute_with_reconnect(models, uid,
         'product.attribute.value', 'read',
         [all_value_ids],
         {'fields': ['name', 'attribute_id']})
@@ -132,7 +155,7 @@ def search_products(keyword: str, limit: int = 10) -> list:
 
     domain = ['|', ('name', 'ilike', keyword), ('default_code', 'ilike', keyword)]
 
-    products = models.execute_kw(DB, uid, PASSWORD,
+    products = _execute_with_reconnect(models, uid,
         'product.product', 'search_read',
         [domain],
         {'fields': PRODUCT_FIELDS, 'limit': limit})
@@ -164,7 +187,7 @@ def search_by_attribute(attr_id: int, value_keyword: str, limit: int = 10) -> li
         return []
 
     # Encontrar valores del atributo que coincidan
-    attr_values = models.execute_kw(DB, uid, PASSWORD,
+    attr_values = _execute_with_reconnect(models, uid,
         'product.attribute.value', 'search_read',
         [[('attribute_id', '=', attr_id), ('name', 'ilike', value_keyword)]],
         {'fields': ['name'], 'limit': 20})
@@ -175,7 +198,7 @@ def search_by_attribute(attr_id: int, value_keyword: str, limit: int = 10) -> li
     value_ids = [v['id'] for v in attr_values]
 
     # Buscar líneas de atributos que contengan esos valores
-    attr_lines = models.execute_kw(DB, uid, PASSWORD,
+    attr_lines = _execute_with_reconnect(models, uid,
         'product.template.attribute.line', 'search_read',
         [[('attribute_id', '=', attr_id), ('value_ids', 'in', value_ids)]],
         {'fields': ['product_tmpl_id']})
@@ -186,7 +209,7 @@ def search_by_attribute(attr_id: int, value_keyword: str, limit: int = 10) -> li
     tmpl_ids = list({line['product_tmpl_id'][0] for line in attr_lines})
 
     # Buscar product.product con esos templates
-    products = models.execute_kw(DB, uid, PASSWORD,
+    products = _execute_with_reconnect(models, uid,
         'product.product', 'search_read',
         [[('product_tmpl_id', 'in', tmpl_ids)]],
         {'fields': PRODUCT_FIELDS, 'limit': limit})
@@ -220,7 +243,7 @@ def search_by_model(model_name: str, limit: int = 10) -> list:
     structured_ids = {p['id'] for p in structured}
 
     # Complementar con búsqueda en nombre
-    name_results = models.execute_kw(DB, uid, PASSWORD,
+    name_results = _execute_with_reconnect(models, uid,
         'product.product', 'search_read',
         [[('name', 'ilike', model_name), ('id', 'not in', list(structured_ids))]],
         {'fields': PRODUCT_FIELDS, 'limit': limit})

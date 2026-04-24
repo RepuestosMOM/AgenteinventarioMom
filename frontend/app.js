@@ -3,6 +3,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('user-input');
     const chatBox = document.getElementById('chat-box');
     const themeToggle = document.getElementById('theme-toggle');
+
+    // Mantener sesión persistente entre recargas
+    let sessionId = localStorage.getItem('mom_session_id');
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        localStorage.setItem('mom_session_id', sessionId);
+    }
     
     // Theme logic
     const toggleTheme = () => {
@@ -78,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.clearChat = () => {
+        // Nueva sesión al limpiar el chat
+        sessionId = crypto.randomUUID();
+        localStorage.setItem('mom_session_id', sessionId);
         chatBox.innerHTML = `
         <div class="message bot-message">
             <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
@@ -106,13 +116,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: msg })
+                body: JSON.stringify({ message: msg, session_id: sessionId })
             });
 
             const data = await response.json();
             removeTypingIndicator();
-            
+
             if (response.ok) {
+                // Persistir session_id devuelto por el servidor
+                if (data.session_id) {
+                    sessionId = data.session_id;
+                    localStorage.setItem('mom_session_id', sessionId);
+                }
                 addMessage(data.reply, false);
             } else {
                 addMessage("Hubo un error al conectar con el servidor Odoo. Por favor, intenta de nuevo.", false);

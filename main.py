@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from typing import Optional
+import uuid
 import os
 
 load_dotenv()
@@ -16,20 +18,22 @@ app = FastAPI(title="Agente MOM API")
 def health():
     return {"status": "ok"}
 
-# Modelo de datos para la API
+
 class ChatRequest(BaseModel):
     message: str
+    session_id: Optional[str] = None
 
-# Montar frontend estático si existe la carpeta
+
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+
 @app.post("/api/chat")
 async def api_chat(req: ChatRequest):
-    # Enviar el mensaje al agente
-    response_text = chat_with_agent(req.message)
-    return {"reply": response_text}
+    session_id = req.session_id or str(uuid.uuid4())
+    response_text = chat_with_agent(req.message, session_id)
+    return {"reply": response_text, "session_id": session_id}
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

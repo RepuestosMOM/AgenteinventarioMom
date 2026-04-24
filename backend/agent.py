@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 import tempfile
 import vertexai
@@ -48,6 +49,7 @@ INSTRUCCIONES:
 4. Si no hay stock (stock=0), menciónalo explícitamente
 5. Si no hay resultados, sugiere una búsqueda alternativa
 6. Responde siempre en español, de forma profesional y concisa
+7. Recuerda el contexto de la conversación — si el cliente ya mencionó un modelo de vehículo, úsalo en búsquedas posteriores
 """
 
 _tools = Tool(function_declarations=[
@@ -105,6 +107,26 @@ _model = GenerativeModel(
     tools=[_tools],
 )
 
+# Sesiones activas: {session_id: {"chat": ChatSession, "last_used": float}}
+_sessions: dict = {}
+_SESSION_TTL = 3600  # 1 hora
+
+
+def _cleanup_sessions():
+    now = time.time()
+    expired = [sid for sid, s in _sessions.items() if now - s["last_used"] > _SESSION_TTL]
+    for sid in expired:
+        del _sessions[sid]
+
+
+def _get_or_create_chat(session_id: str):
+    _cleanup_sessions()
+    if session_id not in _sessions:
+        _sessions[session_id] = {"chat": _model.start_chat(), "last_used": time.time()}
+    else:
+        _sessions[session_id]["last_used"] = time.time()
+    return _sessions[session_id]["chat"]
+
 
 def _execute_tool(name: str, args: dict) -> str:
     if name == "buscar_producto":
@@ -129,9 +151,9 @@ def _execute_tool(name: str, args: dict) -> str:
     return result
 
 
-def chat_with_agent(user_message: str) -> str:
+def chat_with_agent(user_message: str, session_id: str = "default") -> str:
     try:
-        chat = _model.start_chat()
+        chat = _get_or_create_chat(session_id)
         response = chat.send_message(user_message)
 
         for _ in range(5):
@@ -160,4 +182,5 @@ def chat_with_agent(user_message: str) -> str:
 
     except Exception as e:
         log.error("Error en chat_with_agent: %s", e)
+        _sessions.pop(session_id, None)  # sesión corrupta, forzar nuevo chat
         return "Lo siento, tuve un problema procesando tu consulta. Por favor intenta nuevamente."
