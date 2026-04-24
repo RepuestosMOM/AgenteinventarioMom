@@ -60,7 +60,7 @@ steps:
       - '--memory'
       - '512Mi'
       - '--set-env-vars'
-      - 'ODOO_URL=https://www.repuestosmom.cl,ODOO_DB=repuestosmom-mom-main-25810633,ODOO_USER=cio@repuestosmom.cl,ODOO_PASS=95512ac750d1fad3accc6b498a6490d9ef24f2f3,GCP_PROJECT=inteligencia-mom,GCP_LOCATION=us-central1,GEMINI_MODEL=gemini-2.0-flash-001'
+      - 'ODOO_URL=https://www.repuestosmom.cl,ODOO_DB=repuestosmom-mom-main-25810633,ODOO_USER=cio@repuestosmom.cl,ODOO_PASS=95512ac750d1fad3accc6b498a6490d9ef24f2f3,GCP_PROJECT=agente-inventario-mom,GCP_LOCATION=us-central1,GEMINI_MODEL=gemini-2.0-flash-001'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/mom-repo/agente-inventario:$COMMIT_SHA'
