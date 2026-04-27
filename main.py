@@ -10,7 +10,7 @@ import os
 load_dotenv()
 
 from backend.agent import chat_with_agent
-from backend.odoo_client import get_catalog
+from backend.odoo_client import get_catalog, get_product_detail
 
 app = FastAPI(title="Agente MOM API")
 
@@ -50,6 +50,15 @@ async def api_catalog(page: int = 1, limit: int = 50, solo_con_stock: bool = Fal
             "category": p.get("categ_id", [None, ""])[1] if p.get("categ_id") else "",
         })
     return {"products": products, "total": result["total"], "page": page, "limit": limit}
+
+
+@app.get("/api/product/{product_id}")
+async def api_product_detail(product_id: int):
+    p = get_product_detail(product_id)
+    if not p:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return p
 
 
 @app.get("/", response_class=HTMLResponse)

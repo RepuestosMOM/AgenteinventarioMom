@@ -257,6 +257,39 @@ def search_by_model(model_name: str, limit: int = 10) -> list:
     return combined[:limit]
 
 
+def get_product_detail(product_id: int) -> dict | None:
+    """Retorna ficha técnica completa de un producto."""
+    uid, models = get_connection()
+    if not uid:
+        return None
+
+    products = _execute_with_reconnect(models, uid,
+        'product.product', 'search_read',
+        [[('id', '=', product_id)]],
+        {'fields': PRODUCT_FIELDS + ['description_pickingin', 'barcode']})
+
+    if not products:
+        return None
+
+    p = products[0]
+    attrs = _get_product_attributes(models, uid, [product_id])
+    p['_attrs'] = attrs.get(product_id, {})
+
+    return {
+        "id": p.get("id"),
+        "name": p.get("name", ""),
+        "code": p.get("default_code") or "",
+        "barcode": p.get("barcode") or "",
+        "stock": p.get("qty_available", 0),
+        "price": p.get("x_studio_precio_con_iva") or p.get("list_price", 0),
+        "category": p.get("categ_id", [None, ""])[1] if p.get("categ_id") else "",
+        "description": p.get("description_sale") or "",
+        "brand": p.get("meli_field_brand") or "",
+        "part_number": p.get("meli_field_part_number") or "",
+        "attrs": p.get("_attrs", {}),
+    }
+
+
 def get_catalog(page: int = 1, limit: int = 50, solo_con_stock: bool = False) -> dict:
     """Retorna productos paginados para el catálogo."""
     uid, models = get_connection()

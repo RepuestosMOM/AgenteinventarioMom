@@ -174,7 +174,7 @@ window.loadCatalog = async (page = 1) => {
             `${data.total.toLocaleString()} productos en total`;
 
         tbody.innerHTML = data.products.map(p => `
-            <tr class="${p.stock <= 0 ? 'sin-stock' : ''}">
+            <tr class="catalog-row ${p.stock <= 0 ? 'sin-stock' : ''}" onclick="openProduct(${p.id})">
                 <td>${escHtml(p.name)}</td>
                 <td><code>${escHtml(p.code)}</code></td>
                 <td>${escHtml(p.category)}</td>
@@ -201,3 +201,78 @@ const renderPagination = (total, current, limit) => {
 };
 
 const escHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ── Ficha técnica drawer ─────────────────────────────────────────
+window.openProduct = async (id) => {
+    const drawer = document.getElementById('product-drawer');
+    const body   = document.getElementById('drawer-body');
+    const title  = document.getElementById('drawer-name');
+    drawer.classList.add('open');
+    body.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:32px;">Cargando...</p>';
+    title.textContent = '—';
+
+    try {
+        const res  = await fetch(`/api/product/${id}`);
+        const p    = await res.json();
+        title.textContent = p.name;
+
+        const stockClass = p.stock > 0 ? 'stock-ok' : 'stock-cero';
+        const stockLabel = p.stock > 0 ? `${p.stock} unidades disponibles` : 'Sin stock';
+
+        const field = (label, value) => value
+            ? `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${escHtml(String(value))}</span></div>`
+            : '';
+
+        body.innerHTML = `
+            <div class="detail-badge ${p.stock > 0 ? 'badge-ok' : 'badge-empty'}">
+                ${p.stock > 0 ? '✅ En stock' : '❌ Sin stock'}
+            </div>
+
+            <div class="detail-section">
+                <h3>Disponibilidad y Precio</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Stock</span>
+                    <span class="detail-value ${stockClass}">${stockLabel}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Precio</span>
+                    <span class="detail-value" style="font-weight:700">$${Number(p.price).toLocaleString('es-CL')} CLP</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Identificación</h3>
+                ${field('Referencia interna', p.code)}
+                ${field('Código de barras', p.barcode)}
+                ${field('N° de pieza', p.part_number)}
+                ${field('Categoría', p.category)}
+                ${field('Marca', p.brand)}
+            </div>
+
+            ${Object.keys(p.attrs).length ? `
+            <div class="detail-section">
+                <h3>Ficha Técnica</h3>
+                ${field('Código OEM', p.attrs['Código OEM'])}
+                ${field('Modelo', p.attrs['Modelo'])}
+                ${field('Tipo de vehículo', p.attrs['Tipo de vehículo'])}
+                ${field('Diámetro interior', p.attrs['Diámetro interior'])}
+                ${field('Diámetro externo', p.attrs['Diámetro externo'])}
+                ${field('Espesor', p.attrs['Espesor'])}
+            </div>` : ''}
+
+            ${p.description ? `
+            <div class="detail-section">
+                <h3>Descripción</h3>
+                <p style="font-size:13px;color:var(--text-muted);line-height:1.6">${escHtml(p.description)}</p>
+            </div>` : ''}
+        `;
+    } catch(e) {
+        body.innerHTML = '<p style="color:red;text-align:center;padding:32px;">Error cargando ficha</p>';
+    }
+};
+
+window.closeDrawer = (e) => {
+    if (!e || e.target === document.getElementById('product-drawer')) {
+        document.getElementById('product-drawer').classList.remove('open');
+    }
+};
