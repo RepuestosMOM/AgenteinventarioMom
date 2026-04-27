@@ -357,6 +357,21 @@ body {
     40% { transform: scale(1); }
 }
 
+/* ── Paneles de vista ───────────────────────────────────────────── */
+.view-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+}
+
+.catalog-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+}
+
 /* ── Catálogo ───────────────────────────────────────────────────── */
 .catalog-table {
     width: 100%;

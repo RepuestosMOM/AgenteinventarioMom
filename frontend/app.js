@@ -155,6 +155,11 @@ window.showView = (view) => {
     if (view === 'catalog') loadCatalog(1);
 };
 
+// Sincronizar botón de tema en vista catálogo
+document.getElementById('theme-toggle2')?.addEventListener('click', () => {
+    document.getElementById('theme-toggle').click();
+});
+
 window.loadCatalog = async (page = 1) => {
     catalogPage = page;
     const soloStock = document.getElementById('filter-stock').checked;

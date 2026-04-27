@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario | Agente MOM</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -20,9 +20,15 @@
             </div>
 
             <nav class="menu">
-                <a href="#" class="active" id="nav-chat" onclick="event.preventDefault(); showView('chat')"><i class="fa-solid fa-robot"></i> Asistente de Inventario</a>
-                <a href="#" id="nav-catalog" onclick="event.preventDefault(); showView('catalog')"><i class="fa-solid fa-boxes-stacked"></i> Catálogo Completo</a>
-                <a href="#"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+                <a href="#" class="active" id="nav-chat" onclick="event.preventDefault(); showView('chat')">
+                    <i class="fa-solid fa-robot"></i> Asistente de Inventario
+                </a>
+                <a href="#" id="nav-catalog" onclick="event.preventDefault(); showView('catalog')">
+                    <i class="fa-solid fa-boxes-stacked"></i> Catálogo Completo
+                </a>
+                <a href="#">
+                    <i class="fa-solid fa-chart-line"></i> Estadísticas
+                </a>
             </nav>
 
             <div class="system-status">
@@ -33,92 +39,103 @@
             </div>
         </aside>
 
-        <!-- Catalog View -->
-        <main class="chat-area" id="view-catalog" style="display:none;">
-            <header class="chat-header">
-                <div class="agent-info">
-                    <div>
-                        <h1>Catálogo Completo</h1>
-                        <p class="subtitle" id="catalog-subtitle">Cargando...</p>
+        <!-- Main Area -->
+        <main class="chat-area">
+
+            <!-- ── Vista: Asistente ── -->
+            <div id="view-chat" class="view-panel">
+                <header class="chat-header">
+                    <div class="agent-info">
+                        <img src="/static/logo.png" style="object-fit: contain; background: black; padding: 4px;"
+                            alt="Agent MOM" class="avatar">
+                        <div>
+                            <h1>Asistente IA MOM</h1>
+                            <p class="subtitle">Búsqueda inteligente con lenguaje natural</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="icon-btn" title="Limpiar Chat" onclick="clearChat()">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                        <button class="icon-btn" id="theme-toggle">
+                            <i class="fa-solid fa-moon"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="messages-container" id="chat-box">
+                    <div class="message bot-message">
+                        <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
+                        <div class="msg-bubble">
+                            <p>¡Hola! Soy el Agente Virtual de <strong>Repuestos MOM</strong>. Estoy conectado directamente a nuestra base de Odoo.</p>
+                            <p>Puedes preguntarme por repuestos que necesites, por ejemplo:</p>
+                            <ul>
+                                <li><em>"¿Tienes termostatos para Toyota?"</em></li>
+                                <li><em>"Stock del código 020621057"</em></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-                <div class="header-actions" style="gap:8px;">
-                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
-                        <input type="checkbox" id="filter-stock" onchange="loadCatalog(1)"> Solo con stock
-                    </label>
-                    <button class="icon-btn" id="theme-toggle2" onclick="document.getElementById('theme-toggle').click()"><i class="fa-solid fa-moon"></i></button>
-                </div>
-            </header>
-            <div style="flex:1;overflow-y:auto;padding:16px;">
-                <table class="catalog-table" id="catalog-table">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Referencia</th>
-                            <th>Categoría</th>
-                            <th>Stock</th>
-                            <th>Precio</th>
-                        </tr>
-                    </thead>
-                    <tbody id="catalog-body"></tbody>
-                </table>
-                <div class="catalog-pagination" id="catalog-pagination"></div>
-            </div>
-        </main>
 
-        <!-- Main Chat Area -->
-        <main class="chat-area" id="view-chat">
-            <header class="chat-header">
-                <div class="agent-info">
-                    <img src="/static/logo.png" style="object-fit: contain; background: black; padding: 4px;"
-                        alt="Agent MOM" class="avatar">
-                    <div>
-                        <h1>Asistente IA MOM</h1>
-                        <p class="subtitle">Búsqueda inteligente con lenguaje natural</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <button class="icon-btn" title="Limpiar Chat" onclick="clearChat()"><i
-                            class="fa-solid fa-trash"></i></button>
-                    <button class="icon-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
-                </div>
-            </header>
-
-            <div class="messages-container" id="chat-box">
-                <!-- Bienvenida del bot -->
-                <div class="message bot-message">
-                    <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
-                    <div class="msg-bubble">
-                        <p>¡Hola! Soy el Agente Virtual de <strong>Repuestos MOM</strong>. Estoy conectado directamente
-                            a nuestra base de Odoo.</p>
-                        <p>Puedes preguntarme por repuestos que necesites, por ejemplo:</p>
-                        <ul>
-                            <li><em>"¿Tienes termostatos para Toyota?"</em></li>
-                            <li><em>"Stock del código 020621057"</em></li>
-                        </ul>
+                <div class="input-area">
+                    <form id="chat-form">
+                        <div class="input-wrapper">
+                            <button type="button" class="attachment-btn"><i class="fa-solid fa-paperclip"></i></button>
+                            <input type="text" id="user-input" placeholder="Pregunta por disponibilidad de repuestos..."
+                                autocomplete="off">
+                            <button type="submit" class="send-btn" id="send-btn">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="footer-text">
+                        La IA puede cometer errores. Verifica códigos críticos antes de generar la orden.
                     </div>
                 </div>
             </div>
 
-            <div class="input-area">
-                <form id="chat-form">
-                    <div class="input-wrapper">
-                        <button type="button" class="attachment-btn"><i class="fa-solid fa-paperclip"></i></button>
-                        <input type="text" id="user-input" placeholder="Pregunta por disponibilidad de repuestos..."
-                            autocomplete="off">
-                        <button type="submit" class="send-btn" id="send-btn"><i
-                                class="fa-solid fa-paper-plane"></i></button>
+            <!-- ── Vista: Catálogo ── -->
+            <div id="view-catalog" class="view-panel" style="display:none;">
+                <header class="chat-header">
+                    <div class="agent-info">
+                        <div>
+                            <h1>Catálogo Completo</h1>
+                            <p class="subtitle" id="catalog-subtitle">Cargando...</p>
+                        </div>
                     </div>
-                </form>
-                <div class="footer-text">
-                    La IA puede cometer errores. Verifica códigos críticos antes de generar la orden.
+                    <div class="header-actions" style="gap:8px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);cursor:pointer;">
+                            <input type="checkbox" id="filter-stock" onchange="loadCatalog(1)"> Solo con stock
+                        </label>
+                        <button class="icon-btn" id="theme-toggle2">
+                            <i class="fa-solid fa-moon"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="catalog-content">
+                    <table class="catalog-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Referencia</th>
+                                <th>Categoría</th>
+                                <th>Stock</th>
+                                <th>Precio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalog-body">
+                            <tr><td colspan="5" style="text-align:center;padding:32px;">Cargando catálogo...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="catalog-pagination" id="catalog-pagination"></div>
                 </div>
             </div>
+
         </main>
     </div>
 
-    <!-- Cargar JS desde las rutas estáticas configuradas en FastAPI -->
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=2"></script>
 </body>
 
 </html>
