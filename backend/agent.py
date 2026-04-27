@@ -35,8 +35,8 @@ CÓMO RESPONDER:
 1. Siempre busca en el inventario antes de responder — nunca respondas de memoria sobre stock o precios
 2. Si la consulta tiene marca y modelo, usa buscar_por_modelo; si tiene código OEM, usa buscar_oem; para lo demás usa buscar_producto
 3. Presenta los resultados con: nombre completo, código interno, código OEM si existe, stock disponible y precio
-4. Si el stock es 0, indícalo claramente y sugiere búsquedas alternativas (pieza similar, marca distinta, código OEM equivalente)
-5. Si hay múltiples resultados relevantes, muéstralos todos ordenados por disponibilidad
+4. Los resultados vienen separados en "CON STOCK" y "SIN STOCK". Prioriza siempre los que tienen stock. Los sin stock existen en el catálogo y pueden pedirse al proveedor — indícalo así al personal
+5. Si hay múltiples resultados con stock, muéstralos todos. Si solo hay sin stock, indícalo y sugiere alternativas o búsqueda por OEM equivalente
 6. Si la consulta es ambigua (falta marca o modelo), solicita el dato faltante antes de buscar
 7. Cuando corresponda, menciona piezas complementarias relevantes (ej: si buscan pastillas, indicar si hay discos disponibles del mismo modelo)
 8. Mantén el contexto de la conversación — si el vehículo ya fue mencionado, no lo vuelvas a pedir
@@ -122,23 +122,38 @@ def _get_or_create_chat(session_id: str):
 def _execute_tool(name: str, args: dict) -> str:
     if name == "buscar_producto":
         keyword = args.get("keyword", "")
-        items = search_products(keyword, limit=5)
+        items = search_products(keyword, limit=10)
     elif name == "buscar_oem":
-        items = search_oem(args.get("codigo_oem", ""), limit=5)
+        items = search_oem(args.get("codigo_oem", ""), limit=10)
     elif name == "buscar_por_modelo":
         modelo = args.get("modelo", "")
         repuesto = args.get("repuesto", "")
         keyword = f"{repuesto} {modelo}".strip() if repuesto else modelo
-        items = search_by_model(keyword, limit=5)
+        items = search_by_model(keyword, limit=10)
     else:
         return "Herramienta no reconocida."
 
     if not items:
         return "No se encontraron productos en el inventario para esa búsqueda."
 
-    result = f"Se encontraron {len(items)} resultado(s):\n\n"
-    for p in items:
-        result += format_product(p) + "\n\n---\n\n"
+    # Ordenar: con stock primero
+    items.sort(key=lambda p: p.get('qty_available', 0), reverse=True)
+
+    con_stock = [p for p in items if p.get('qty_available', 0) > 0]
+    sin_stock  = [p for p in items if p.get('qty_available', 0) <= 0]
+
+    result = f"Resultados: {len(con_stock)} con stock disponible, {len(sin_stock)} sin stock.\n\n"
+
+    if con_stock:
+        result += "=== CON STOCK ===\n\n"
+        for p in con_stock:
+            result += format_product(p) + "\n\n---\n\n"
+
+    if sin_stock:
+        result += "=== SIN STOCK (existen en catálogo, pueden pedirse) ===\n\n"
+        for p in sin_stock:
+            result += format_product(p) + "\n\n---\n\n"
+
     return result
 
 
