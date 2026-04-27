@@ -356,3 +356,67 @@ body {
     0%, 80%, 100% { transform: scale(0); }
     40% { transform: scale(1); }
 }
+
+/* ── Catálogo ───────────────────────────────────────────────────── */
+.catalog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.catalog-table thead th {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.catalog-table tbody tr {
+    border-bottom: 1px solid var(--border-glass);
+    transition: background 0.15s;
+}
+
+.catalog-table tbody tr:hover { background: var(--accent-light); }
+
+.catalog-table tbody tr.sin-stock { opacity: 0.55; }
+
+.catalog-table td {
+    padding: 9px 14px;
+    color: var(--text-main);
+    vertical-align: middle;
+}
+
+.catalog-table td code {
+    background: var(--accent-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.stock-ok   { color: #16a34a; font-weight: 600; }
+.stock-cero { color: #dc2626; font-weight: 600; }
+
+.catalog-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.catalog-pagination button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.catalog-pagination button:hover { background: var(--accent-hover); }

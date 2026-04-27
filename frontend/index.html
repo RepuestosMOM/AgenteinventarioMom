@@ -20,8 +20,8 @@
             </div>
 
             <nav class="menu">
-                <a href="#" class="active"><i class="fa-solid fa-robot"></i> Asistente de Inventario</a>
-                <a href="#"><i class="fa-solid fa-boxes-stacked"></i> Catálogo Completo</a>
+                <a href="#" class="active" id="nav-chat" onclick="showView('chat')"><i class="fa-solid fa-robot"></i> Asistente de Inventario</a>
+                <a href="#" id="nav-catalog" onclick="showView('catalog')"><i class="fa-solid fa-boxes-stacked"></i> Catálogo Completo</a>
                 <a href="#"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
             </nav>
 
@@ -33,8 +33,41 @@
             </div>
         </aside>
 
+        <!-- Catalog View -->
+        <main class="chat-area" id="view-catalog" style="display:none;">
+            <header class="chat-header">
+                <div class="agent-info">
+                    <div>
+                        <h1>Catálogo Completo</h1>
+                        <p class="subtitle" id="catalog-subtitle">Cargando...</p>
+                    </div>
+                </div>
+                <div class="header-actions" style="gap:8px;">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
+                        <input type="checkbox" id="filter-stock" onchange="loadCatalog(1)"> Solo con stock
+                    </label>
+                    <button class="icon-btn" id="theme-toggle2" onclick="document.getElementById('theme-toggle').click()"><i class="fa-solid fa-moon"></i></button>
+                </div>
+            </header>
+            <div style="flex:1;overflow-y:auto;padding:16px;">
+                <table class="catalog-table" id="catalog-table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Referencia</th>
+                            <th>Categoría</th>
+                            <th>Stock</th>
+                            <th>Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalog-body"></tbody>
+                </table>
+                <div class="catalog-pagination" id="catalog-pagination"></div>
+            </div>
+        </main>
+
         <!-- Main Chat Area -->
-        <main class="chat-area">
+        <main class="chat-area" id="view-chat">
             <header class="chat-header">
                 <div class="agent-info">
                     <img src="/static/logo.png" style="object-fit: contain; background: black; padding: 4px;"

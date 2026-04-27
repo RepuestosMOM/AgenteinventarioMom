@@ -257,6 +257,27 @@ def search_by_model(model_name: str, limit: int = 10) -> list:
     return combined[:limit]
 
 
+def get_catalog(page: int = 1, limit: int = 50, solo_con_stock: bool = False) -> dict:
+    """Retorna productos paginados para el catálogo."""
+    uid, models = get_connection()
+    if not uid:
+        return {"products": [], "total": 0}
+
+    domain = [('qty_available', '>', 0)] if solo_con_stock else []
+    offset = (page - 1) * limit
+
+    total = _execute_with_reconnect(models, uid,
+        'product.product', 'search_count', [domain], {})
+
+    products = _execute_with_reconnect(models, uid,
+        'product.product', 'search_read',
+        [domain],
+        {'fields': PRODUCT_FIELDS, 'limit': limit, 'offset': offset,
+         'order': 'qty_available desc, name asc'})
+
+    return {"products": products or [], "total": total or 0}
+
+
 def format_product(p: dict) -> str:
     """Formatea un producto para respuesta del agente."""
     code = p.get('default_code') or 'Sin código'
