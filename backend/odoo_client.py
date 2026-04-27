@@ -273,7 +273,10 @@ def get_catalog(page: int = 1, limit: int = 50, solo_con_stock: bool = False) ->
         'product.product', 'search_read',
         [domain],
         {'fields': PRODUCT_FIELDS, 'limit': limit, 'offset': offset,
-         'order': 'qty_available desc, name asc'})
+         'order': 'name asc'})
+
+    if products:
+        products.sort(key=lambda p: p.get('qty_available', 0), reverse=True)
 
     return {"products": products or [], "total": total or 0}
 
