@@ -1,21 +1,8 @@
 import os
 import time
 import logging
-import tempfile
-import vertexai
+import google.generativeai as genai
 
-_creds_json = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-if _creds_json:
-    _tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-    _tmp.write(_creds_json)
-    _tmp.close()
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = _tmp.name
-from vertexai.generative_models import (
-    GenerativeModel,
-    FunctionDeclaration,
-    Tool,
-    Part,
-)
 from backend.odoo_client import (
     search_products,
     search_oem,
@@ -25,11 +12,10 @@ from backend.odoo_client import (
 
 log = logging.getLogger(__name__)
 
-PROJECT_ID = os.environ.get('GCP_PROJECT', 'agente-inventario-mom')
-LOCATION   = os.environ.get('GCP_LOCATION', 'us-central1')
-MODEL_ID   = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+MODEL_ID       = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
-vertexai.init(project=PROJECT_ID, location=LOCATION)
+genai.configure(api_key=GEMINI_API_KEY)
 
 SYSTEM_PROMPT = """Eres el Asistente Virtual de Repuestos MOM, una tienda especializada en repuestos automotrices ubicada en Chile.
 
@@ -52,56 +38,56 @@ INSTRUCCIONES:
 7. Recuerda el contexto de la conversación — si el cliente ya mencionó un modelo de vehículo, úsalo en búsquedas posteriores
 """
 
-_tools = Tool(function_declarations=[
-    FunctionDeclaration(
+_tools = genai.protos.Tool(function_declarations=[
+    genai.protos.FunctionDeclaration(
         name="buscar_producto",
         description="Busca repuestos en el inventario por nombre de la pieza o código interno. Usar para búsquedas generales cuando no se menciona marca/modelo ni código OEM.",
-        parameters={
-            "type": "object",
-            "properties": {
-                "keyword": {
-                    "type": "string",
-                    "description": "Nombre del repuesto a buscar (ej: 'amortiguador trasero', 'termostato', 'pastillas freno')"
-                }
+        parameters=genai.protos.Schema(
+            type=genai.protos.Type.OBJECT,
+            properties={
+                "keyword": genai.protos.Schema(
+                    type=genai.protos.Type.STRING,
+                    description="Nombre del repuesto a buscar (ej: 'amortiguador trasero', 'termostato', 'pastillas freno')"
+                )
             },
-            "required": ["keyword"]
-        }
+            required=["keyword"]
+        )
     ),
-    FunctionDeclaration(
+    genai.protos.FunctionDeclaration(
         name="buscar_oem",
         description="Busca un repuesto por su código OEM (referencia del fabricante original). Usar cuando el cliente proporciona un código alfanumérico con números (ej: 96445053, AB12345).",
-        parameters={
-            "type": "object",
-            "properties": {
-                "codigo_oem": {
-                    "type": "string",
-                    "description": "Código OEM del repuesto (ej: '96445053', '12380318')"
-                }
+        parameters=genai.protos.Schema(
+            type=genai.protos.Type.OBJECT,
+            properties={
+                "codigo_oem": genai.protos.Schema(
+                    type=genai.protos.Type.STRING,
+                    description="Código OEM del repuesto (ej: '96445053', '12380318')"
+                )
             },
-            "required": ["codigo_oem"]
-        }
+            required=["codigo_oem"]
+        )
     ),
-    FunctionDeclaration(
+    genai.protos.FunctionDeclaration(
         name="buscar_por_modelo",
         description="Busca repuestos compatibles con un modelo o marca de vehículo específico. Usar cuando el cliente menciona marca, modelo o tipo de vehículo.",
-        parameters={
-            "type": "object",
-            "properties": {
-                "modelo": {
-                    "type": "string",
-                    "description": "Marca o modelo del vehículo (ej: 'N-300', 'Hilux', 'Aveo', 'Chevrolet')"
-                },
-                "repuesto": {
-                    "type": "string",
-                    "description": "Tipo de repuesto que busca (ej: 'amortiguador', 'termostato'). Opcional."
-                }
+        parameters=genai.protos.Schema(
+            type=genai.protos.Type.OBJECT,
+            properties={
+                "modelo": genai.protos.Schema(
+                    type=genai.protos.Type.STRING,
+                    description="Marca o modelo del vehículo (ej: 'N-300', 'Hilux', 'Aveo', 'Chevrolet')"
+                ),
+                "repuesto": genai.protos.Schema(
+                    type=genai.protos.Type.STRING,
+                    description="Tipo de repuesto que busca (ej: 'amortiguador', 'termostato'). Opcional."
+                )
             },
-            "required": ["modelo"]
-        }
+            required=["modelo"]
+        )
     ),
 ])
 
-_model = GenerativeModel(
+_model = genai.GenerativeModel(
     MODEL_ID,
     system_instruction=SYSTEM_PROMPT,
     tools=[_tools],
@@ -170,9 +156,11 @@ def chat_with_agent(user_message: str, session_id: str = "default") -> str:
             for fc in function_calls:
                 tool_result = _execute_tool(fc.name, dict(fc.args))
                 function_responses.append(
-                    Part.from_function_response(
-                        name=fc.name,
-                        response={"result": tool_result}
+                    genai.protos.Part(
+                        function_response=genai.protos.FunctionResponse(
+                            name=fc.name,
+                            response={"result": tool_result}
+                        )
                     )
                 )
 
@@ -182,5 +170,5 @@ def chat_with_agent(user_message: str, session_id: str = "default") -> str:
 
     except Exception as e:
         log.error("Error en chat_with_agent: %s", e)
-        _sessions.pop(session_id, None)  # sesión corrupta, forzar nuevo chat
+        _sessions.pop(session_id, None)
         return "Lo siento, tuve un problema procesando tu consulta. Por favor intenta nuevamente."
