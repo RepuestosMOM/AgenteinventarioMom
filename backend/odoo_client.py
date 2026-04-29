@@ -241,12 +241,25 @@ def search_products(keyword: str, limit: int = 10) -> list:
 
 
 def search_oem(oem_code: str, limit: int = 10) -> list:
-    """Busca productos por código OEM."""
+    """
+    Busca por código OEM en atributos estructurados.
+    Si no encuentra nada, busca en default_code y name como fallback
+    (cubre el caso en que el modelo enruta mal una referencia interna).
+    """
     uid, models = get_connection()
     if not uid:
         return []
+
     products = _search_by_attr(models, uid, 'oem', oem_code, limit)
-    return _enrich(models, uid, products)
+    if products:
+        return _enrich(models, uid, products)
+
+    # Fallback: buscar como referencia interna o nombre
+    fallback = _execute(models, uid,
+        'product.product', 'search_read',
+        [['|', ('default_code', 'ilike', oem_code), ('name', 'ilike', oem_code)]],
+        {'fields': PRODUCT_FIELDS, 'limit': limit}) or []
+    return _enrich(models, uid, fallback)
 
 
 def search_by_model(model_name: str, limit: int = 10) -> list:
