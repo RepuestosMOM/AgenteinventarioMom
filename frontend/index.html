@@ -5,18 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario | Agente MOM</title>
-    <link rel="stylesheet" href="/static/style.css?v=3">
+    <link rel="stylesheet" href="/static/style.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
     <div class="app-container">
+
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="logo-area" style="justify-content: center;">
-                <img src="/static/logo.png" alt="MOM Logo"
-                    style="max-width: 100%; height: auto; max-height: 90px; filter: drop-shadow(0px 2px 4px rgba(158,22,13,0.3));">
+            <div class="logo-area logo-area--centered">
+                <img src="/static/logo.png" alt="MOM Logo" class="sidebar-logo">
             </div>
 
             <nav class="menu">
@@ -46,8 +46,7 @@
             <div id="view-chat" class="view-panel">
                 <header class="chat-header">
                     <div class="agent-info">
-                        <img src="/static/logo.png" style="object-fit: contain; background: black; padding: 4px;"
-                            alt="Agent MOM" class="avatar">
+                        <img src="/static/logo.png" alt="Agent MOM" class="avatar avatar--header">
                         <div>
                             <h1>Asistente IA MOM</h1>
                             <p class="subtitle">Búsqueda inteligente con lenguaje natural</p>
@@ -80,8 +79,11 @@
                 <div class="input-area">
                     <form id="chat-form">
                         <div class="input-wrapper">
-                            <button type="button" class="attachment-btn"><i class="fa-solid fa-paperclip"></i></button>
-                            <input type="text" id="user-input" placeholder="Pregunta por disponibilidad de repuestos..."
+                            <button type="button" class="attachment-btn">
+                                <i class="fa-solid fa-paperclip"></i>
+                            </button>
+                            <input type="text" id="user-input"
+                                placeholder="Pregunta por disponibilidad de repuestos..."
                                 autocomplete="off">
                             <button type="submit" class="send-btn" id="send-btn">
                                 <i class="fa-solid fa-paper-plane"></i>
@@ -103,9 +105,10 @@
                             <p class="subtitle" id="catalog-subtitle">Cargando...</p>
                         </div>
                     </div>
-                    <div class="header-actions" style="gap:8px;">
-                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);cursor:pointer;">
-                            <input type="checkbox" id="filter-stock" onchange="loadCatalog(1)"> Solo con stock
+                    <div class="header-actions header-actions--compact">
+                        <label class="filter-label">
+                            <input type="checkbox" id="filter-stock" onchange="loadCatalog(1)">
+                            Solo con stock
                         </label>
                         <button class="icon-btn" id="theme-toggle2">
                             <i class="fa-solid fa-moon"></i>
@@ -125,7 +128,11 @@
                             </tr>
                         </thead>
                         <tbody id="catalog-body">
-                            <tr><td colspan="5" style="text-align:center;padding:32px;">Cargando catálogo...</td></tr>
+                            <tr>
+                                <td colspan="5" style="text-align:center;padding:32px;">
+                                    Cargando catálogo...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                     <div class="catalog-pagination" id="catalog-pagination"></div>
@@ -140,15 +147,22 @@
         <div class="drawer-panel">
             <div class="drawer-header">
                 <h2 id="drawer-name">—</h2>
-                <button class="icon-btn" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+                <button class="icon-btn" onclick="closeDrawer()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             <div class="drawer-body" id="drawer-body">
-                <p style="color:var(--text-muted)">Cargando...</p>
+                <p class="drawer-loading">Cargando...</p>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js?v=3"></script>
+    <!-- Scripts: orden de dependencias — utils primero -->
+    <script src="/static/js/utils.js?v=4"></script>
+    <script src="/static/js/theme.js?v=4"></script>
+    <script src="/static/js/chat.js?v=4"></script>
+    <script src="/static/js/catalog.js?v=4"></script>
+    <script src="/static/js/drawer.js?v=4"></script>
 </body>
 
 </html>

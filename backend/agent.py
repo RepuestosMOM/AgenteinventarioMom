@@ -1,3 +1,6 @@
+# ─────────────────────────────────────────────────────────────────
+# IMPORTS Y CONFIGURACIÓN
+# ─────────────────────────────────────────────────────────────────
 import os
 import time
 import logging
@@ -17,6 +20,9 @@ MODEL_ID       = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
 genai.configure(api_key=GEMINI_API_KEY)
 
+# ─────────────────────────────────────────────────────────────────
+# SYSTEM PROMPT — Instrucciones de rol y comportamiento del agente
+# ─────────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """Eres el asistente interno de inventario de Repuestos MOM, diseñado para apoyar al personal de ventas y bodega en la consulta rápida y precisa del stock.
 
 ROL:
@@ -55,6 +61,9 @@ Para productos sin stock usa ❌ en lugar de ✅ y añade al final: _(sin stock 
 Separa los bloques con una línea en blanco. No uses listas con asterisco ni guiones.
 """
 
+# ─────────────────────────────────────────────────────────────────
+# DECLARACIÓN DE HERRAMIENTAS (function calling)
+# ─────────────────────────────────────────────────────────────────
 _tools = genai.protos.Tool(function_declarations=[
     genai.protos.FunctionDeclaration(
         name="buscar_producto",
@@ -104,13 +113,19 @@ _tools = genai.protos.Tool(function_declarations=[
     ),
 ])
 
+# ─────────────────────────────────────────────────────────────────
+# MODELO GEMINI
+# ─────────────────────────────────────────────────────────────────
 _model = genai.GenerativeModel(
     MODEL_ID,
     system_instruction=SYSTEM_PROMPT,
     tools=[_tools],
 )
 
+# ─────────────────────────────────────────────────────────────────
+# GESTIÓN DE SESIONES
 # Sesiones activas: {session_id: {"chat": ChatSession, "last_used": float}}
+# ─────────────────────────────────────────────────────────────────
 _sessions: dict = {}
 _SESSION_TTL = 3600  # 1 hora
 
@@ -131,6 +146,9 @@ def _get_or_create_chat(session_id: str):
     return _sessions[session_id]["chat"]
 
 
+# ─────────────────────────────────────────────────────────────────
+# EJECUCIÓN DE HERRAMIENTAS
+# ─────────────────────────────────────────────────────────────────
 def _execute_tool(name: str, args: dict) -> str:
     if name == "buscar_producto":
         keyword = args.get("keyword", "")
@@ -169,6 +187,9 @@ def _execute_tool(name: str, args: dict) -> str:
     return result
 
 
+# ─────────────────────────────────────────────────────────────────
+# PUNTO DE ENTRADA PRINCIPAL
+# ─────────────────────────────────────────────────────────────────
 def chat_with_agent(user_message: str, session_id: str = "default") -> str:
     try:
         chat = _get_or_create_chat(session_id)

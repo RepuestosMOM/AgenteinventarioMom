@@ -1,4 +1,7 @@
-
+# ─────────────────────────────────────────────────────────────────
+# IMPORTS Y CONFIGURACIÓN
+# ─────────────────────────────────────────────────────────────────
+from __future__ import annotations
 import xmlrpc.client
 import os
 import logging
@@ -10,40 +13,33 @@ DB       = os.environ.get('ODOO_DB')
 USERNAME = os.environ.get('ODOO_USER')
 PASSWORD = os.environ.get('ODOO_PASS')
 
-_uid     = None
-_models  = None
-
-
-def _reset_connection():
-    global _uid, _models
-    _uid = None
-    _models = None
+_uid    = None
+_models = None
 
 # ─────────────────────────────────────────────────────────────────
-# MAPEO TÉCNICO — Sprint 1 (verificado contra Odoo 19)
+# MAPEO TÉCNICO DE ATRIBUTOS (verificado contra Odoo 19)
 #
-# Los campos técnicos existen como product.attribute (no como campos
-# directos del modelo). Solo ~20 productos tienen atributos asignados;
-# la mayoría de la data técnica vive en el nombre del producto.
-#
-# IDs de atributos confirmados:
-ATTR_OEM         = 14   # "Código OEM"          → referencia fabricante original
-ATTR_MODELO      = 15   # "Modelo"              → ej. "Aveo, Sail"
-ATTR_TIPO_VEH    = 12   # "Tipo de vehículo"    → categoría de vehículo
-ATTR_DIAM_INT    = 23   # "Diámetro interior"   → mm
-ATTR_DIAM_EXT    = 24   # "Diámetro externo"    → mm
-ATTR_ESPESOR     = 25   # "Espesor"             → mm
 
-# Campos directos en product.template con data:
-# - name              → nombre libre (contiene marca/modelo/motor en texto)
-# - default_code      → referencia interna
-# - meli_field_brand  → Marca (MeLi) — actualmente vacío en producción
-# - meli_field_part_number → Nº de pieza (MeLi) — actualmente vacío
+# Claves normalizadas → IDs de product.attribute en la instancia.
+# Solo ~20 productos tienen atributos asignados; la mayoría de la
+# info técnica vive en el nombre del producto.
 # ─────────────────────────────────────────────────────────────────
+ATTRS = {
+    'oem':       14,   # Código OEM — referencia del fabricante original
+    'model':     15,   # Modelo de vehículo — ej. "Aveo, Sail"
+    'type':      12,   # Tipo de vehículo — categoría general
+    'diam_int':  23,   # Diámetro interior (mm)
+    'diam_ext':  24,   # Diámetro externo (mm)
+    'thickness': 25,   # Espesor (mm)
+}
 
+_ATTR_ID_TO_KEY = {v: k for k, v in ATTRS.items()}
+
+# product_tmpl_id se incluye para evitar una llamada XML-RPC extra en _get_attrs
 PRODUCT_FIELDS = [
     'name',
     'default_code',
+    'product_tmpl_id',
     'qty_available',
     'list_price',
     'x_studio_precio_con_iva',
@@ -54,7 +50,16 @@ PRODUCT_FIELDS = [
 ]
 
 
-def get_connection(retry: bool = True):
+# ─────────────────────────────────────────────────────────────────
+# CONEXIÓN XML-RPC
+# ─────────────────────────────────────────────────────────────────
+def _reset_connection():
+    global _uid, _models
+    _uid = None
+    _models = None
+
+
+def get_connection():
     global _uid, _models
     if _uid is not None:
         return _uid, _models
@@ -62,12 +67,12 @@ def get_connection(retry: bool = True):
         log.error("Faltan variables de entorno ODOO_URL, ODOO_DB, ODOO_USER o ODOO_PASS")
         return None, None
     try:
-        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(URL))
+        common = xmlrpc.client.ServerProxy(f'{URL}/xmlrpc/2/common')
         uid = common.authenticate(DB, USERNAME, PASSWORD, {})
         if not uid:
             raise Exception("Credenciales incorrectas")
         _uid = uid
-        _models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(URL))
+        _models = xmlrpc.client.ServerProxy(f'{URL}/xmlrpc/2/object')
         log.info("Conectado a Odoo (UID: %s)", _uid)
         return _uid, _models
     except Exception as e:
@@ -75,12 +80,13 @@ def get_connection(retry: bool = True):
         return None, None
 
 
-def _execute_with_reconnect(models, uid, model, method, args, kwargs):
-    """Ejecuta una llamada XML-RPC y reconecta automáticamente si la sesión expiró."""
+def _execute(models, uid, model, method, args, kwargs=None):
+    """Llama XML-RPC y reconecta automáticamente si la sesión expiró."""
+    kwargs = kwargs or {}
     try:
         return models.execute_kw(DB, uid, PASSWORD, model, method, args, kwargs)
     except Exception as e:
-        if 'session' in str(e).lower() or 'access' in str(e).lower() or 'auth' in str(e).lower():
+        if any(k in str(e).lower() for k in ('session', 'access', 'auth')):
             log.warning("Sesión Odoo expirada, reconectando...")
             _reset_connection()
             new_uid, new_models = get_connection()
@@ -89,116 +95,94 @@ def _execute_with_reconnect(models, uid, model, method, args, kwargs):
         raise
 
 
-def _get_product_attributes(models, uid, product_ids: list) -> dict:
+# ─────────────────────────────────────────────────────────────────
+# ATRIBUTOS TÉCNICOS
+# ─────────────────────────────────────────────────────────────────
+def _get_attrs(models, uid, products: list) -> dict:
     """
-    Dado una lista de product.product IDs, retorna sus atributos técnicos
-    como dict {product_id: {attr_name: value, ...}}.
+    Dado una lista de registros product.product (con product_tmpl_id ya cargado),
+    retorna {product_id: {clave_normalizada: valor}} para los atributos de ATTRS.
+    Omite silenciosamente atributos vacíos o sin valor.
     """
-    if not product_ids:
+    if not products:
         return {}
 
-    # Obtener los template IDs correspondientes
-    products = _execute_with_reconnect(models, uid,
-        'product.product', 'read',
-        [product_ids],
-        {'fields': ['product_tmpl_id']})
-    tmpl_map = {p['id']: p['product_tmpl_id'][0] for p in products if p.get('product_tmpl_id')}
+    tmpl_map = {
+        p['id']: p['product_tmpl_id'][0]
+        for p in products
+        if p.get('product_tmpl_id')
+    }
     tmpl_ids = list(set(tmpl_map.values()))
+    if not tmpl_ids:
+        return {}
 
-    # Buscar líneas de atributos para esos templates
-    attr_lines = _execute_with_reconnect(models, uid,
+    attr_lines = _execute(models, uid,
         'product.template.attribute.line', 'search_read',
         [[('product_tmpl_id', 'in', tmpl_ids),
-          ('attribute_id', 'in', [ATTR_OEM, ATTR_MODELO, ATTR_TIPO_VEH,
-                                   ATTR_DIAM_INT, ATTR_DIAM_EXT, ATTR_ESPESOR])]],
+          ('attribute_id', 'in', list(ATTRS.values()))]],
         {'fields': ['product_tmpl_id', 'attribute_id', 'value_ids']})
 
     if not attr_lines:
         return {}
 
-    # Obtener nombres de valores
     all_value_ids = [vid for line in attr_lines for vid in line['value_ids']]
     if not all_value_ids:
         return {}
 
-    values = _execute_with_reconnect(models, uid,
+    values = _execute(models, uid,
         'product.attribute.value', 'read',
         [all_value_ids],
         {'fields': ['name', 'attribute_id']})
     value_map = {v['id']: v for v in values}
 
-    # Construir resultado por template
-    tmpl_attrs = {}
+    tmpl_attrs: dict = {}
     for line in attr_lines:
         tmpl_id = line['product_tmpl_id'][0]
-        attr_name = line['attribute_id'][1]
+        attr_id = line['attribute_id'][0]
+        key     = _ATTR_ID_TO_KEY.get(attr_id)
+        if not key:
+            continue
         names = [value_map[vid]['name'] for vid in line['value_ids'] if vid in value_map]
-        tmpl_attrs.setdefault(tmpl_id, {})[attr_name] = ', '.join(names)
+        if names:
+            tmpl_attrs.setdefault(tmpl_id, {})[key] = ', '.join(names)
 
-    # Mapear de vuelta a product IDs
-    result = {}
-    for prod_id, tmpl_id in tmpl_map.items():
-        if tmpl_id in tmpl_attrs:
-            result[prod_id] = tmpl_attrs[tmpl_id]
-
-    return result
+    return {
+        prod_id: tmpl_attrs[tmpl_id]
+        for prod_id, tmpl_id in tmpl_map.items()
+        if tmpl_id in tmpl_attrs
+    }
 
 
-def search_products(keyword: str, limit: int = 10) -> list:
-    """
-    Búsqueda general por nombre o código interno.
-    Retorna productos enriquecidos con atributos técnicos estructurados.
-    """
-    uid, models = get_connection()
-    if not uid:
-        return []
-
-    domain = ['|', ('name', 'ilike', keyword), ('default_code', 'ilike', keyword)]
-
-    products = _execute_with_reconnect(models, uid,
-        'product.product', 'search_read',
-        [domain],
-        {'fields': PRODUCT_FIELDS, 'limit': limit})
-
+def _enrich(models, uid, products: list) -> list:
+    """Agrega _attrs a cada producto y ordena por stock descendente."""
     if not products:
         return []
-
-    # Enriquecer con atributos técnicos
-    prod_ids = [p['id'] for p in products]
-    attrs_by_product = _get_product_attributes(models, uid, prod_ids)
-
+    attrs_map = _get_attrs(models, uid, products)
     for p in products:
-        p['_attrs'] = attrs_by_product.get(p['id'], {})
-
+        p['_attrs'] = attrs_map.get(p['id'], {})
+    products.sort(key=lambda p: p.get('qty_available', 0), reverse=True)
     return products
 
 
-def search_by_attribute(attr_id: int, value_keyword: str, limit: int = 10) -> list:
-    """
-    Búsqueda estructurada por atributo técnico.
-    Útil para buscar por OEM, Modelo, Diámetro, etc.
-
-    Ejemplo:
-        search_by_attribute(ATTR_OEM, "96445053")
-        search_by_attribute(ATTR_MODELO, "Aveo")
-    """
-    uid, models = get_connection()
-    if not uid:
+# ─────────────────────────────────────────────────────────────────
+# FUNCIONES DE BÚSQUEDA
+# ─────────────────────────────────────────────────────────────────
+def _search_by_attr(models, uid, attr_key: str, value: str, limit: int) -> list:
+    """Busca product.product filtrando por un atributo técnico de ATTRS."""
+    attr_id = ATTRS.get(attr_key)
+    if not attr_id:
         return []
 
-    # Encontrar valores del atributo que coincidan
-    attr_values = _execute_with_reconnect(models, uid,
+    attr_values = _execute(models, uid,
         'product.attribute.value', 'search_read',
-        [[('attribute_id', '=', attr_id), ('name', 'ilike', value_keyword)]],
+        [[('attribute_id', '=', attr_id), ('name', 'ilike', value)]],
         {'fields': ['name'], 'limit': 20})
 
     if not attr_values:
         return []
 
     value_ids = [v['id'] for v in attr_values]
-
-    # Buscar líneas de atributos que contengan esos valores
-    attr_lines = _execute_with_reconnect(models, uid,
+    attr_lines = _execute(models, uid,
         'product.template.attribute.line', 'search_read',
         [[('attribute_id', '=', attr_id), ('value_ids', 'in', value_ids)]],
         {'fields': ['product_tmpl_id']})
@@ -207,63 +191,95 @@ def search_by_attribute(attr_id: int, value_keyword: str, limit: int = 10) -> li
         return []
 
     tmpl_ids = list({line['product_tmpl_id'][0] for line in attr_lines})
-
-    # Buscar product.product con esos templates
-    products = _execute_with_reconnect(models, uid,
+    return _execute(models, uid,
         'product.product', 'search_read',
         [[('product_tmpl_id', 'in', tmpl_ids)]],
-        {'fields': PRODUCT_FIELDS, 'limit': limit})
-
-    if not products:
-        return []
-
-    prod_ids = [p['id'] for p in products]
-    attrs_by_product = _get_product_attributes(models, uid, prod_ids)
-    for p in products:
-        p['_attrs'] = attrs_by_product.get(p['id'], {})
-
-    return products
+        {'fields': PRODUCT_FIELDS, 'limit': limit}) or []
 
 
-def search_oem(oem_code: str, limit: int = 10) -> list:
-    """Busca productos por código OEM."""
-    return search_by_attribute(ATTR_OEM, oem_code, limit)
-
-
-def search_by_model(model_name: str, limit: int = 10) -> list:
+def search_products(keyword: str, limit: int = 10) -> list:
     """
-    Búsqueda combinada por modelo de vehículo.
-    Primero busca en atributos estructurados, luego complementa con nombre.
+    Búsqueda general: nombre, código interno y código OEM.
+    Combina las tres fuentes y deduplicada por ID.
     """
     uid, models = get_connection()
     if not uid:
         return []
 
-    structured = search_by_attribute(ATTR_MODELO, model_name, limit)
+    # Buscar template IDs que tengan ese OEM en atributos
+    oem_tmpl_ids: list = []
+    oem_values = _execute(models, uid,
+        'product.attribute.value', 'search_read',
+        [[('attribute_id', '=', ATTRS['oem']), ('name', 'ilike', keyword)]],
+        {'fields': ['name'], 'limit': 20})
+    if oem_values:
+        oem_value_ids = [v['id'] for v in oem_values]
+        oem_lines = _execute(models, uid,
+            'product.template.attribute.line', 'search_read',
+            [[('attribute_id', '=', ATTRS['oem']), ('value_ids', 'in', oem_value_ids)]],
+            {'fields': ['product_tmpl_id']})
+        oem_tmpl_ids = list({line['product_tmpl_id'][0] for line in oem_lines})
+
+    if oem_tmpl_ids:
+        domain = ['|', '|',
+            ('name', 'ilike', keyword),
+            ('default_code', 'ilike', keyword),
+            ('product_tmpl_id', 'in', oem_tmpl_ids),
+        ]
+    else:
+        domain = ['|',
+            ('name', 'ilike', keyword),
+            ('default_code', 'ilike', keyword),
+        ]
+
+    products = _execute(models, uid,
+        'product.product', 'search_read',
+        [domain],
+        {'fields': PRODUCT_FIELDS, 'limit': limit}) or []
+
+    return _enrich(models, uid, products)
+
+
+def search_oem(oem_code: str, limit: int = 10) -> list:
+    """Busca productos por código OEM."""
+    uid, models = get_connection()
+    if not uid:
+        return []
+    products = _search_by_attr(models, uid, 'oem', oem_code, limit)
+    return _enrich(models, uid, products)
+
+
+def search_by_model(model_name: str, limit: int = 10) -> list:
+    """
+    Búsqueda combinada por modelo de vehículo.
+    Primero atributos estructurados, luego complementa con búsqueda en nombre.
+    """
+    uid, models = get_connection()
+    if not uid:
+        return []
+
+    structured    = _search_by_attr(models, uid, 'model', model_name, limit)
     structured_ids = {p['id'] for p in structured}
 
-    # Complementar con búsqueda en nombre
-    name_results = _execute_with_reconnect(models, uid,
+    name_results = _execute(models, uid,
         'product.product', 'search_read',
         [[('name', 'ilike', model_name), ('id', 'not in', list(structured_ids))]],
-        {'fields': PRODUCT_FIELDS, 'limit': limit})
-
-    prod_ids = [p['id'] for p in name_results]
-    attrs_by_product = _get_product_attributes(models, uid, prod_ids)
-    for p in name_results:
-        p['_attrs'] = attrs_by_product.get(p['id'], {})
+        {'fields': PRODUCT_FIELDS, 'limit': limit}) or []
 
     combined = structured + name_results
-    return combined[:limit]
+    return _enrich(models, uid, combined[:limit])
 
 
+# ─────────────────────────────────────────────────────────────────
+# DETALLE Y CATÁLOGO
+# ─────────────────────────────────────────────────────────────────
 def get_product_detail(product_id: int) -> dict | None:
     """Retorna ficha técnica completa de un producto."""
     uid, models = get_connection()
     if not uid:
         return None
 
-    products = _execute_with_reconnect(models, uid,
+    products = _execute(models, uid,
         'product.product', 'search_read',
         [[('id', '=', product_id)]],
         {'fields': PRODUCT_FIELDS + ['description_pickingin', 'barcode']})
@@ -271,22 +287,33 @@ def get_product_detail(product_id: int) -> dict | None:
     if not products:
         return None
 
-    p = products[0]
-    attrs = _get_product_attributes(models, uid, [product_id])
-    p['_attrs'] = attrs.get(product_id, {})
+    p     = _enrich(models, uid, products)[0]
+    attrs = p.get('_attrs', {})
 
     return {
-        "id": p.get("id"),
-        "name": p.get("name", ""),
-        "code": p.get("default_code") or "",
-        "barcode": p.get("barcode") or "",
-        "stock": p.get("qty_available", 0),
-        "price": p.get("x_studio_precio_con_iva") or p.get("list_price", 0),
-        "category": p.get("categ_id", [None, ""])[1] if p.get("categ_id") else "",
-        "description": p.get("description_sale") or "",
-        "brand": p.get("meli_field_brand") or "",
-        "part_number": p.get("meli_field_part_number") or "",
-        "attrs": p.get("_attrs", {}),
+        'id':          p.get('id'),
+        'name':        p.get('name', ''),
+        'code':        p.get('default_code') or '',
+        'barcode':     p.get('barcode') or '',
+        'stock':       p.get('qty_available', 0),
+        'price':       p.get('x_studio_precio_con_iva') or p.get('list_price', 0),
+        'category':    p['categ_id'][1] if p.get('categ_id') else '',
+        'description': p.get('description_sale') or '',
+        'brand':       p.get('meli_field_brand') or '',
+        'part_number': p.get('meli_field_part_number') or '',
+        'attrs':       attrs,
+    }
+
+
+def serialize_catalog_row(p: dict) -> dict:
+    """Convierte un producto raw de Odoo al formato que expone /api/catalog."""
+    return {
+        'id':       p.get('id'),
+        'name':     p.get('name', ''),
+        'code':     p.get('default_code') or '',
+        'stock':    p.get('qty_available', 0),
+        'price':    p.get('x_studio_precio_con_iva') or p.get('list_price', 0),
+        'category': p['categ_id'][1] if p.get('categ_id') else '',
     }
 
 
@@ -294,33 +321,31 @@ def get_catalog(page: int = 1, limit: int = 50, solo_con_stock: bool = False) ->
     """Retorna productos paginados para el catálogo."""
     uid, models = get_connection()
     if not uid:
-        return {"products": [], "total": 0}
+        return {'products': [], 'total': 0}
 
     domain = [('qty_available', '>', 0)] if solo_con_stock else []
     offset = (page - 1) * limit
 
-    total = _execute_with_reconnect(models, uid,
-        'product.product', 'search_count', [domain], {})
-
-    products = _execute_with_reconnect(models, uid,
+    total    = _execute(models, uid, 'product.product', 'search_count', [domain], {})
+    products = _execute(models, uid,
         'product.product', 'search_read',
         [domain],
-        {'fields': PRODUCT_FIELDS, 'limit': limit, 'offset': offset,
-         'order': 'name asc'})
+        {'fields': PRODUCT_FIELDS, 'limit': limit, 'offset': offset, 'order': 'name asc'}) or []
 
-    if products:
-        products.sort(key=lambda p: p.get('qty_available', 0), reverse=True)
-
-    return {"products": products or [], "total": total or 0}
+    products.sort(key=lambda p: p.get('qty_available', 0), reverse=True)
+    return {'products': products, 'total': total or 0}
 
 
+# ─────────────────────────────────────────────────────────────────
+# FORMATEO DE RESPUESTA
+# ─────────────────────────────────────────────────────────────────
 def format_product(p: dict) -> str:
     """Formatea un producto para respuesta del agente."""
-    code = p.get('default_code') or 'Sin código'
-    name = p.get('name', 'Sin nombre')
+    code  = p.get('default_code') or 'Sin código'
+    name  = p.get('name', 'Sin nombre')
     price = p.get('x_studio_precio_con_iva') or p.get('list_price', 0)
     stock = p.get('qty_available', 0)
-    categ = p.get('categ_id', [None, ''])[1] if p.get('categ_id') else ''
+    categ = p['categ_id'][1] if p.get('categ_id') else ''
     attrs = p.get('_attrs', {})
 
     lines = [f"**{name}** (Ref: `{code}`)"]
@@ -328,18 +353,17 @@ def format_product(p: dict) -> str:
 
     if categ:
         lines.append(f"Categoría: {categ}")
-
-    if attrs.get('Código OEM'):
-        lines.append(f"OEM: {attrs['Código OEM']}")
-    if attrs.get('Modelo'):
-        lines.append(f"Modelo: {attrs['Modelo']}")
-    if attrs.get('Tipo de vehículo'):
-        lines.append(f"Vehículo: {attrs['Tipo de vehículo']}")
-    if attrs.get('Diámetro interior'):
-        lines.append(f"Ø interior: {attrs['Diámetro interior']}")
-    if attrs.get('Diámetro externo'):
-        lines.append(f"Ø externo: {attrs['Diámetro externo']}")
-    if attrs.get('Espesor'):
-        lines.append(f"Espesor: {attrs['Espesor']}")
+    if attrs.get('oem'):
+        lines.append(f"OEM: {attrs['oem']}")
+    if attrs.get('model'):
+        lines.append(f"Modelo: {attrs['model']}")
+    if attrs.get('type'):
+        lines.append(f"Vehículo: {attrs['type']}")
+    if attrs.get('diam_int'):
+        lines.append(f"Ø interior: {attrs['diam_int']}")
+    if attrs.get('diam_ext'):
+        lines.append(f"Ø externo: {attrs['diam_ext']}")
+    if attrs.get('thickness'):
+        lines.append(f"Espesor: {attrs['thickness']}")
 
     return '\n'.join(lines)

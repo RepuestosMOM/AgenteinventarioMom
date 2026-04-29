@@ -532,3 +532,49 @@ body {
 
 .detail-label { color: var(--text-muted); flex-shrink: 0; }
 .detail-value { color: var(--text-main); text-align: right; font-weight: 500; }
+.detail-price { font-weight: 700; }
+
+/* ── Clases utilitarias (reemplazan inline styles del HTML) ─────── */
+.logo-area--centered  { justify-content: center; }
+
+.sidebar-logo {
+    max-width: 100%;
+    height: auto;
+    max-height: 90px;
+    filter: drop-shadow(0px 2px 4px rgba(158, 22, 13, 0.3));
+}
+
+.avatar--header {
+    object-fit: contain;
+    background: black;
+    padding: 4px;
+}
+
+.header-actions--compact { gap: 8px; }
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.drawer-loading {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 32px;
+}
+
+.drawer-error {
+    color: red;
+    text-align: center;
+    padding: 32px;
+}
+
+.detail-description {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
