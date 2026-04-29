@@ -292,16 +292,28 @@ def get_product_detail(product_id: int) -> dict | None:
     if not uid:
         return None
 
+    extra_fields = [
+        'description_pickingin',
+        'barcode',
+        'description',
+        'meli_ai_generated_description',
+        'meli_ai_title',
+    ]
     products = _execute(models, uid,
         'product.product', 'search_read',
         [[('id', '=', product_id)]],
-        {'fields': PRODUCT_FIELDS + ['description_pickingin', 'barcode']})
+        {'fields': PRODUCT_FIELDS + extra_fields})
 
     if not products:
         return None
 
     p     = _enrich(models, uid, products)[0]
     attrs = p.get('_attrs', {})
+
+    # description viene en HTML — extraer solo el texto plano
+    raw_desc = p.get('description') or ''
+    import re
+    plain_desc = re.sub(r'<[^>]+>', '', raw_desc).strip()
 
     return {
         'id':          p.get('id'),
@@ -311,10 +323,12 @@ def get_product_detail(product_id: int) -> dict | None:
         'stock':       p.get('qty_available', 0),
         'price':       p.get('x_studio_precio_con_iva') or p.get('list_price', 0),
         'category':    p['categ_id'][1] if p.get('categ_id') else '',
-        'description': p.get('description_sale') or '',
+        'description': p.get('description_sale') or plain_desc,
         'brand':       p.get('meli_field_brand') or '',
         'part_number': p.get('meli_field_part_number') or '',
         'attrs':       attrs,
+        'ai_title':       p.get('meli_ai_title') or '',
+        'ai_description': p.get('meli_ai_generated_description') or '',
     }
 
 

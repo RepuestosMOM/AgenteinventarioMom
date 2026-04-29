@@ -578,3 +578,21 @@ body {
     color: var(--text-muted);
     line-height: 1.6;
 }
+
+.detail-section--ai {
+    background: var(--accent-light);
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.detail-section--ai h3 {
+    color: var(--accent);
+}
+
+.detail-ai-body {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    white-space: pre-line;
+    margin-top: 8px;
+}

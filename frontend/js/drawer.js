@@ -71,6 +71,12 @@ window.openProduct = async (id) => {
                 <h3>Descripción</h3>
                 <p class="detail-description">${escHtml(p.description)}</p>
             </div>` : ''}
+
+            ${p.ai_description ? `
+            <div class="detail-section detail-section--ai">
+                <h3>✨ Contenido IA${p.ai_title ? ` — ${escHtml(p.ai_title)}` : ''}</h3>
+                <p class="detail-ai-body">${escHtml(p.ai_description)}</p>
+            </div>` : ''}
         `;
     } catch (e) {
         body.innerHTML = '<p class="drawer-error">Error cargando ficha</p>';
