@@ -162,8 +162,7 @@ def _execute_tool(name: str, args: dict) -> str:
     elif name == "buscar_por_modelo":
         modelo = args.get("modelo", "")
         repuesto = args.get("repuesto", "")
-        keyword = f"{repuesto} {modelo}".strip() if repuesto else modelo
-        items = search_by_model(keyword, limit=10)
+        items = search_by_model(modelo, repuesto=repuesto, limit=10)
     else:
         return "Herramienta no reconocida."
 

@@ -262,21 +262,34 @@ def search_oem(oem_code: str, limit: int = 10) -> list:
     return _enrich(models, uid, fallback)
 
 
-def search_by_model(model_name: str, limit: int = 10) -> list:
+def search_by_model(model_name: str, repuesto: str = "", limit: int = 10) -> list:
     """
     Búsqueda combinada por modelo de vehículo.
-    Primero atributos estructurados, luego complementa con búsqueda en nombre.
+    Primero atributos estructurados (filtrados por repuesto si se da),
+    luego complementa con búsqueda en nombre usando condiciones AND separadas.
     """
     uid, models = get_connection()
     if not uid:
         return []
 
-    structured    = _search_by_attr(models, uid, 'model', model_name, limit)
+    structured = _search_by_attr(models, uid, 'model', model_name, limit)
+
+    # Si hay repuesto, filtrar resultados de atributos por coincidencia en nombre
+    if repuesto:
+        structured = [p for p in structured if repuesto.lower() in p.get('name', '').lower()]
+
     structured_ids = {p['id'] for p in structured}
+
+    # Condiciones AND separadas para modelo y repuesto (evita buscar "bandeja Corsa" como frase exacta)
+    name_domain: list = [('id', 'not in', list(structured_ids))]
+    if repuesto:
+        name_domain += [('name', 'ilike', model_name), ('name', 'ilike', repuesto)]
+    else:
+        name_domain.append(('name', 'ilike', model_name))
 
     name_results = _execute(models, uid,
         'product.product', 'search_read',
-        [[('name', 'ilike', model_name), ('id', 'not in', list(structured_ids))]],
+        [name_domain],
         {'fields': PRODUCT_FIELDS, 'limit': limit}) or []
 
     combined = structured + name_results
