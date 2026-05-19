@@ -9,45 +9,29 @@ from google.cloud import speech, texttospeech
 log = logging.getLogger(__name__)
 
 # ── Mapa MIME → encoding Cloud STT ───────────────────────────────
-_MIME_TO_ENCODING = {
-    "audio/webm":       speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
-    "audio/webm;codecs=opus": speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
-    "audio/ogg":        speech.RecognitionConfig.AudioEncoding.OGG_OPUS,
-    "audio/ogg;codecs=opus": speech.RecognitionConfig.AudioEncoding.OGG_OPUS,
-    "audio/mp4":        speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
-    "audio/mpeg":       speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
-}
-
-
-def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/webm") -> str:
+def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/wav") -> str:
     """Transcribe audio bytes a texto usando Cloud Speech-to-Text."""
     client = speech.SpeechClient()
 
-    # Normalizar mime type (quitar parámetros extra antes de lookup)
-    mime_key = mime_type.split(";")[0].strip().lower()
-    # Si tiene codecs=opus en el mime_type original, incluirlo en la clave
-    if "codecs=opus" in mime_type.lower():
-        mime_key = mime_key + ";codecs=opus"
-
-    encoding = _MIME_TO_ENCODING.get(
-        mime_type.lower(),
-        _MIME_TO_ENCODING.get(mime_key, speech.RecognitionConfig.AudioEncoding.WEBM_OPUS)
-    )
-
+    # El frontend siempre envía WAV/LINEAR16 a 16 kHz
     config = speech.RecognitionConfig(
-        encoding=encoding,
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=16000,
+        audio_channel_count=1,
         language_code="es-CL",
         enable_automatic_punctuation=True,
-        model="latest_short",  # optimizado para comandos cortos
+        model="default",
         speech_contexts=[
             speech.SpeechContext(
                 phrases=[
-                    "amortiguador", "termostato", "pastillas", "discos",
-                    "filtro", "correa", "bomba", "radiador", "alternador",
-                    "Toyota", "Chevrolet", "Hilux", "Aveo", "Corolla",
-                    "OEM", "stock", "bodega", "proveedor",
+                    "amortiguador", "termostato", "pastillas", "discos de freno",
+                    "filtro de aceite", "correa de distribución", "bomba de agua",
+                    "radiador", "alternador", "bujías", "sensor", "inyector",
+                    "Toyota", "Chevrolet", "Hilux", "Aveo", "Corolla", "Yaris",
+                    "Ranger", "Spark", "N-300", "Duster", "Logan",
+                    "OEM", "código OEM", "stock", "bodega", "referencia",
                 ],
-                boost=15.0,
+                boost=18.0,
             )
         ],
     )
@@ -61,13 +45,16 @@ def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/webm") -> str:
         raise
 
     if not response.results:
+        log.warning("STT devolvió 0 resultados para audio de %d bytes", len(audio_bytes))
         return ""
 
-    return " ".join(
+    transcript = " ".join(
         result.alternatives[0].transcript
         for result in response.results
         if result.alternatives
     ).strip()
+    log.info("STT transcripción: %r", transcript)
+    return transcript
 
 
 def synthesize_speech(text: str) -> bytes:

@@ -6,8 +6,12 @@ let catalogPage = 1;
 window.showView = (view) => {
     document.getElementById('view-chat').style.display    = view === 'chat'    ? 'flex' : 'none';
     document.getElementById('view-catalog').style.display = view === 'catalog' ? 'flex' : 'none';
+    // Sidebar desktop
     document.getElementById('nav-chat').classList.toggle('active',    view === 'chat');
     document.getElementById('nav-catalog').classList.toggle('active', view === 'catalog');
+    // Bottom nav móvil
+    document.getElementById('mobile-nav-chat')?.classList.toggle('active',    view === 'chat');
+    document.getElementById('mobile-nav-catalog')?.classList.toggle('active', view === 'catalog');
     if (view === 'catalog') loadCatalog(1);
 };
 

@@ -82,20 +82,18 @@
                 <div class="input-area">
                     <form id="chat-form">
                         <div class="input-wrapper">
-                            <button type="button" class="attachment-btn">
-                                <i class="fa-solid fa-paperclip"></i>
-                            </button>
                             <input type="text" id="user-input"
                                 placeholder="Pregunta por disponibilidad de repuestos..."
                                 autocomplete="off">
-                            <button type="button" class="mic-btn" id="mic-btn" title="Hablar">
-                                <i class="fa-solid fa-microphone"></i>
-                            </button>
-                            <button type="submit" class="send-btn" id="send-btn">
+                            <button type="submit" class="send-btn" id="send-btn" title="Enviar">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </button>
                         </div>
                     </form>
+                    <button type="button" class="mic-btn" id="mic-btn" title="Hablar">
+                        <i class="fa-solid fa-microphone"></i>
+                        <span class="mic-label">Hablar</span>
+                    </button>
                     <div class="footer-text">
                         La IA puede cometer errores. Verifica códigos críticos antes de generar la orden.
                     </div>
@@ -163,13 +161,31 @@
         </div>
     </div>
 
+    <!-- Navegación inferior móvil -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+        <a href="#" class="mobile-nav-item active" id="mobile-nav-chat"
+           onclick="event.preventDefault(); showView('chat')">
+            <i class="fa-solid fa-robot"></i>
+            <span>Asistente</span>
+        </a>
+        <a href="#" class="mobile-nav-item" id="mobile-nav-catalog"
+           onclick="event.preventDefault(); showView('catalog')">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>Catálogo</span>
+        </a>
+        <a href="#" class="mobile-nav-item">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Estadísticas</span>
+        </a>
+    </nav>
+
     <!-- Scripts: orden de dependencias — utils primero -->
-    <script src="/static/js/utils.js?v=5"></script>
-    <script src="/static/js/theme.js?v=5"></script>
-    <script src="/static/js/chat.js?v=5"></script>
-    <script src="/static/js/catalog.js?v=5"></script>
-    <script src="/static/js/drawer.js?v=5"></script>
-    <script src="/static/js/voice.js?v=5"></script>
+    <script src="/static/js/utils.js?v=6"></script>
+    <script src="/static/js/theme.js?v=6"></script>
+    <script src="/static/js/chat.js?v=6"></script>
+    <script src="/static/js/catalog.js?v=6"></script>
+    <script src="/static/js/drawer.js?v=6"></script>
+    <script src="/static/js/voice.js?v=6"></script>
 </body>
 
 </html>
