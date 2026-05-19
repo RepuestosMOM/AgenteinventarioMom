@@ -1,8 +1,8 @@
 # ─────────────────────────────────────────────────────────────────
 # IMPORTS Y CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────────
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -14,6 +14,7 @@ load_dotenv()
 
 from backend.agent import chat_with_agent
 from backend.odoo_client import get_catalog, get_product_detail, serialize_catalog_row
+from backend.voice import transcribe_audio, synthesize_speech
 
 app = FastAPI(title="Agente MOM API")
 
@@ -23,6 +24,10 @@ app = FastAPI(title="Agente MOM API")
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+
+
+class SynthesizeRequest(BaseModel):
+    text: str
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -49,6 +54,31 @@ async def api_chat(req: ChatRequest):
     session_id = req.session_id or str(uuid.uuid4())
     response_text = chat_with_agent(req.message, session_id)
     return {"reply": response_text, "session_id": session_id}
+
+
+# ─────────────────────────────────────────────────────────────────
+# RUTAS — VOZ (Speech-to-Text / Text-to-Speech)
+# ─────────────────────────────────────────────────────────────────
+@app.post("/api/voice/transcribe")
+async def api_transcribe(audio: UploadFile = File(...)):
+    audio_bytes = await audio.read()
+    mime_type   = audio.content_type or "audio/webm"
+    try:
+        text = transcribe_audio(audio_bytes, mime_type)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error en transcripción: {exc}")
+    return {"text": text}
+
+
+@app.post("/api/voice/synthesize")
+async def api_synthesize(req: SynthesizeRequest):
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Texto vacío")
+    try:
+        audio_bytes = synthesize_speech(req.text)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error en síntesis: {exc}")
+    return Response(content=audio_bytes, media_type="audio/mpeg")
 
 
 # ─────────────────────────────────────────────────────────────────

@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('mom_session_id', sessionId);
                 }
                 addMessage(data.reply, false);
+                if (window.voiceSpeak) window.voiceSpeak(data.reply);
             } else {
                 addMessage('Hubo un error al conectar con el servidor. Por favor, intenta de nuevo.', false);
             }

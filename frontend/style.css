@@ -596,3 +596,43 @@ body {
     white-space: pre-line;
     margin-top: 8px;
 }
+
+/* ── Botón micrófono ────────────────────────────────────────────── */
+.mic-btn {
+    width: 40px; height: 40px; border-radius: 12px; border: none;
+    background: transparent; color: var(--text-muted); margin-left: 8px;
+    cursor: pointer; display: flex; justify-content: center; align-items: center;
+    transition: color 0.2s, background 0.2s; font-size: 1rem; flex-shrink: 0;
+}
+.mic-btn:hover { background: var(--accent-light); color: var(--accent); }
+
+.mic-btn.recording {
+    color: #ef4444;
+    animation: mic-pulse 1.2s ease-in-out infinite;
+}
+
+.mic-btn.processing {
+    color: var(--text-muted);
+    opacity: 0.6;
+    cursor: wait;
+}
+
+@keyframes mic-pulse {
+    0%, 100% { transform: scale(1);    opacity: 1;   }
+    50%       { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* Borde del input cuando está escuchando */
+.input-wrapper.listening {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* ── Botón altavoz (respuesta en voz) ───────────────────────────── */
+#voice-response-toggle.voice-active {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+#voice-response-toggle.voice-active i::before {
+    content: "\f028"; /* fa-volume-high */
+}

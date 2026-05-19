@@ -53,6 +53,9 @@
                         </div>
                     </div>
                     <div class="header-actions">
+                        <button class="icon-btn" id="voice-response-toggle" title="Activar respuesta en voz">
+                            <i class="fa-solid fa-volume-xmark"></i>
+                        </button>
                         <button class="icon-btn" title="Limpiar Chat" onclick="clearChat()">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -85,6 +88,9 @@
                             <input type="text" id="user-input"
                                 placeholder="Pregunta por disponibilidad de repuestos..."
                                 autocomplete="off">
+                            <button type="button" class="mic-btn" id="mic-btn" title="Hablar">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
                             <button type="submit" class="send-btn" id="send-btn">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </button>
@@ -158,11 +164,12 @@
     </div>
 
     <!-- Scripts: orden de dependencias — utils primero -->
-    <script src="/static/js/utils.js?v=4"></script>
-    <script src="/static/js/theme.js?v=4"></script>
-    <script src="/static/js/chat.js?v=4"></script>
-    <script src="/static/js/catalog.js?v=4"></script>
-    <script src="/static/js/drawer.js?v=4"></script>
+    <script src="/static/js/utils.js?v=5"></script>
+    <script src="/static/js/theme.js?v=5"></script>
+    <script src="/static/js/chat.js?v=5"></script>
+    <script src="/static/js/catalog.js?v=5"></script>
+    <script src="/static/js/drawer.js?v=5"></script>
+    <script src="/static/js/voice.js?v=5"></script>
 </body>
 
 </html>
