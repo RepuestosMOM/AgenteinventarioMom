@@ -20,9 +20,36 @@ const toggleTheme = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ── Tema ──────────────────────────────────────────────────────
     const saved = localStorage.getItem('theme');
     applyTheme(saved === 'light' ? 'light' : 'dark');
     _THEME_BTNS.forEach(id => {
         document.getElementById(id)?.addEventListener('click', toggleTheme);
+    });
+
+    // ── Sidebar colapsable ────────────────────────────────────────
+    const sidebar    = document.getElementById('sidebar');
+    const toggleBtn  = document.getElementById('sidebar-toggle');
+    const toggleIcon = document.getElementById('sidebar-toggle-icon');
+
+    if (!sidebar || !toggleBtn) return;
+
+    const applyCollapsed = (collapsed) => {
+        sidebar.classList.toggle('sidebar--collapsed', collapsed);
+        if (toggleIcon) {
+            toggleIcon.className = collapsed
+                ? 'fa-solid fa-chevron-right'
+                : 'fa-solid fa-chevron-left';
+        }
+        toggleBtn.title = collapsed ? 'Expandir menú' : 'Colapsar menú';
+        localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0');
+    };
+
+    // Restaurar estado guardado
+    applyCollapsed(localStorage.getItem('sidebar_collapsed') === '1');
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyCollapsed(!sidebar.classList.contains('sidebar--collapsed'));
     });
 });

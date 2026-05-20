@@ -79,14 +79,91 @@ body {
 
 /* Sidebar */
 .sidebar {
-    width: 280px;
+    width: 260px;
+    min-width: 260px;
     background: var(--bg-glass-solid);
     border-right: 1px solid var(--border-glass);
     display: flex;
     flex-direction: column;
-    padding: 24px;
+    padding: 24px 16px;
     z-index: 10;
+    position: relative;
+    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
 }
+
+/* ── Sidebar colapsado ─────────────────────────────────────────── */
+.sidebar--collapsed {
+    width: 64px;
+    min-width: 64px;
+    padding: 24px 8px;
+}
+
+/* Ocultar textos al colapsar con fade */
+.sidebar .menu a span,
+.sidebar .status-label,
+.sidebar .status-text,
+.sidebar .sidebar-logo {
+    transition: opacity 0.2s, width 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar--collapsed .menu a span,
+.sidebar--collapsed .status-label,
+.sidebar--collapsed .status-text,
+.sidebar--collapsed .sidebar-logo {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+/* Centrar iconos cuando está colapsado */
+.sidebar--collapsed .menu a {
+    justify-content: center;
+    gap: 0;
+    padding: 14px 0;
+}
+
+.sidebar--collapsed .logo-area {
+    justify-content: center;
+    min-height: 56px;
+    margin-bottom: 24px;
+}
+
+.sidebar--collapsed .system-status {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+/* ── Botón toggle del sidebar ──────────────────────────────────── */
+.sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -1px;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 44px;
+    border-radius: 0 8px 8px 0;
+    border: 1px solid var(--border-glass);
+    border-left: none;
+    background: var(--bg-glass-solid);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s, background 0.2s;
+}
+
+.sidebar:hover .sidebar-toggle { opacity: 1; }
+.sidebar-toggle:hover { color: var(--accent); background: var(--accent-light); }
 
 .logo-area {
     display: flex;
@@ -128,16 +205,17 @@ body {
 .menu a {
     text-decoration: none;
     color: var(--text-muted);
-    padding: 12px 16px;
+    padding: 12px 14px;
     border-radius: 12px;
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 12px;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
-.menu a i { width: 20px; text-align: center; }
+.menu a i { width: 20px; text-align: center; flex-shrink: 0; }
 .menu a:hover, .menu a.active {
     background: var(--accent-light);
     color: var(--accent);

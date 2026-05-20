@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario | Agente MOM</title>
-    <link rel="stylesheet" href="/static/style.css?v=4">
+    <link rel="stylesheet" href="/static/style.css?v=7">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -13,28 +13,42 @@
 <body>
     <div class="app-container">
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
+        <!-- Sidebar colapsable -->
+        <aside class="sidebar" id="sidebar">
+
+            <!-- Botón toggle (flecha en el borde derecho) -->
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Colapsar menú">
+                <i class="fa-solid fa-chevron-left" id="sidebar-toggle-icon"></i>
+            </button>
+
             <div class="logo-area logo-area--centered">
                 <img src="/static/logo.png" alt="MOM Logo" class="sidebar-logo">
             </div>
 
             <nav class="menu">
-                <a href="#" class="active" id="nav-chat" onclick="event.preventDefault(); showView('chat')">
-                    <i class="fa-solid fa-robot"></i> Asistente de Inventario
+                <a href="#" class="active" id="nav-chat"
+                   onclick="event.preventDefault(); showView('chat')"
+                   title="Asistente de Inventario">
+                    <i class="fa-solid fa-robot"></i>
+                    <span>Asistente de Inventario</span>
                 </a>
-                <a href="#" id="nav-catalog" onclick="event.preventDefault(); showView('catalog')">
-                    <i class="fa-solid fa-boxes-stacked"></i> Catálogo Completo
+                <a href="#" id="nav-catalog"
+                   onclick="event.preventDefault(); showView('catalog')"
+                   title="Catálogo Completo">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Catálogo Completo</span>
                 </a>
-                <a href="#">
-                    <i class="fa-solid fa-chart-line"></i> Estadísticas
+                <a href="#" title="Estadísticas">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Estadísticas</span>
                 </a>
             </nav>
 
             <div class="system-status">
-                <p>Odoo ERP Connection</p>
+                <p class="status-label">Odoo ERP Connection</p>
                 <div class="status-indicator">
-                    <span class="dot"></span> Online
+                    <span class="dot"></span>
+                    <span class="status-text">Online</span>
                 </div>
             </div>
         </aside>
@@ -46,6 +60,7 @@
             <div id="view-chat" class="view-panel">
                 <header class="chat-header">
                     <div class="agent-info">
+                        <!-- Botón hamburguesa solo en móvil (no necesario con bottom nav, pero útil) -->
                         <img src="/static/logo.png" alt="Agent MOM" class="avatar avatar--header">
                         <div>
                             <h1>Asistente IA MOM</h1>
@@ -180,12 +195,12 @@
     </nav>
 
     <!-- Scripts: orden de dependencias — utils primero -->
-    <script src="/static/js/utils.js?v=6"></script>
-    <script src="/static/js/theme.js?v=6"></script>
-    <script src="/static/js/chat.js?v=6"></script>
-    <script src="/static/js/catalog.js?v=6"></script>
-    <script src="/static/js/drawer.js?v=6"></script>
-    <script src="/static/js/voice.js?v=6"></script>
+    <script src="/static/js/utils.js?v=7"></script>
+    <script src="/static/js/theme.js?v=7"></script>
+    <script src="/static/js/chat.js?v=7"></script>
+    <script src="/static/js/catalog.js?v=7"></script>
+    <script src="/static/js/drawer.js?v=7"></script>
+    <script src="/static/js/voice.js?v=7"></script>
 </body>
 
 </html>
