@@ -460,9 +460,39 @@ body {
     color: var(--accent);
 }
 
+/* ── Botón hamburguesa (solo móvil) ─────────────────────────────── */
+.hamburger-btn {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    color: var(--text-main);
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 8px;
+    transition: background 0.2s;
+}
+.hamburger-btn:hover { background: var(--accent-light); color: var(--accent); }
+
+/* ── Backdrop sidebar móvil ─────────────────────────────────────── */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+.sidebar-backdrop.open { display: block; }
+
 /* ── Responsive — móvil ─────────────────────────────────────────── */
 @media (max-width: 768px) {
-    .sidebar { display: none; }
 
     body { align-items: flex-start; }
 
@@ -473,18 +503,43 @@ body {
         border-radius: 0;
         border: none;
         flex-direction: column;
+        padding-bottom: 0;
     }
+
+    /* Sidebar como drawer lateral */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 260px !important;
+        min-width: 260px !important;
+        padding: 24px 16px !important;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    /* Ocultar toggle de colapsar en móvil */
+    .sidebar-toggle { display: none; }
 
     .chat-area { height: 100%; }
 
     .chat-header {
         padding: 0 16px;
-        height: 64px;
+        height: 60px;
     }
+
+    .hamburger-btn { display: flex; }
 
     .agent-info h1 { font-size: 1rem; }
     .subtitle      { display: none; }
-    .avatar--header { width: 34px; height: 34px; }
+    .avatar--header { width: 32px; height: 32px; }
 
     .messages-container {
         padding: 16px;
@@ -494,7 +549,7 @@ body {
     .message { max-width: 92%; }
 
     .input-area {
-        padding: 12px 16px 10px;
+        padding: 10px 16px;
         padding-bottom: calc(10px + env(safe-area-inset-bottom));
     }
 
@@ -504,7 +559,7 @@ body {
     }
 
     #user-input {
-        font-size: 16px; /* evita zoom en iOS */
+        font-size: 16px;
         padding: 10px 0;
     }
 
@@ -515,66 +570,22 @@ body {
         margin-left: 8px;
     }
 
-    .attachment-btn { display: none; }
-
     .mic-btn {
-        height: 52px;
-        font-size: 1.05rem;
+        height: 50px;
+        font-size: 1rem;
         border-radius: 14px;
+        margin-top: 8px;
     }
 
     /* Catálogo */
     .catalog-content { padding: 8px 12px; }
     .catalog-table { font-size: 12px; }
-    .catalog-table th,
-    .catalog-table td { padding: 8px 10px; }
+    .catalog-table th, .catalog-table td { padding: 8px 10px; }
     .catalog-table th:nth-child(3),
-    .catalog-table td:nth-child(3) { display: none; } /* oculta columna Categoría */
+    .catalog-table td:nth-child(3) { display: none; }
 
-    /* Drawer */
+    /* Drawer ficha */
     .drawer-panel { width: 100%; }
-}
-
-/* ── Navegación inferior móvil ──────────────────────────────────── */
-.mobile-bottom-nav {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .mobile-bottom-nav {
-        display: flex;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: calc(48px + env(safe-area-inset-bottom));
-        padding-bottom: env(safe-area-inset-bottom);
-        background: var(--bg-glass-solid);
-        border-top: 1px solid var(--border-glass);
-        z-index: 50;
-        backdrop-filter: var(--blur);
-        -webkit-backdrop-filter: var(--blur);
-    }
-
-    .mobile-nav-item {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        color: var(--text-muted);
-        transition: color 0.2s;
-    }
-
-    .mobile-nav-item i { font-size: 1.25rem; }
-    .mobile-nav-item span { display: none; }
-
-    .mobile-nav-item.active,
-    .mobile-nav-item:hover { color: var(--accent); }
-
-    .app-container {
-        padding-bottom: calc(48px + env(safe-area-inset-bottom));
-    }
 }
 
 /* Typing Indicator Animation */

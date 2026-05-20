@@ -27,12 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(id)?.addEventListener('click', toggleTheme);
     });
 
-    // ── Sidebar colapsable ────────────────────────────────────────
+    // ── Sidebar colapsable (desktop) ──────────────────────────────
     const sidebar    = document.getElementById('sidebar');
     const toggleBtn  = document.getElementById('sidebar-toggle');
     const toggleIcon = document.getElementById('sidebar-toggle-icon');
+    const backdrop   = document.getElementById('sidebar-backdrop');
 
-    if (!sidebar || !toggleBtn) return;
+    if (!sidebar) return;
 
     const applyCollapsed = (collapsed) => {
         sidebar.classList.toggle('sidebar--collapsed', collapsed);
@@ -41,15 +42,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? 'fa-solid fa-chevron-right'
                 : 'fa-solid fa-chevron-left';
         }
-        toggleBtn.title = collapsed ? 'Expandir menú' : 'Colapsar menú';
+        if (toggleBtn) toggleBtn.title = collapsed ? 'Expandir menú' : 'Colapsar menú';
         localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0');
     };
 
-    // Restaurar estado guardado
     applyCollapsed(localStorage.getItem('sidebar_collapsed') === '1');
 
-    toggleBtn.addEventListener('click', (e) => {
+    toggleBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
         applyCollapsed(!sidebar.classList.contains('sidebar--collapsed'));
     });
+
+    // ── Sidebar drawer (móvil) ────────────────────────────────────
+    const openMobileSidebar = () => {
+        sidebar.classList.add('mobile-open');
+        backdrop?.classList.add('open');
+    };
+
+    const closeMobileSidebar = () => {
+        sidebar.classList.remove('mobile-open');
+        backdrop?.classList.remove('open');
+    };
+
+    document.getElementById('hamburger-btn')?.addEventListener('click', openMobileSidebar);
+    document.getElementById('hamburger-btn-catalog')?.addEventListener('click', openMobileSidebar);
+    backdrop?.addEventListener('click', closeMobileSidebar);
+
+    // Cerrar al seleccionar una vista en móvil
+    window._closeMobileSidebar = closeMobileSidebar;
 });

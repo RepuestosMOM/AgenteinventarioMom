@@ -10,8 +10,7 @@ window.showView = (view) => {
     document.getElementById('nav-chat').classList.toggle('active',    view === 'chat');
     document.getElementById('nav-catalog').classList.toggle('active', view === 'catalog');
     // Bottom nav móvil
-    document.getElementById('mobile-nav-chat')?.classList.toggle('active',    view === 'chat');
-    document.getElementById('mobile-nav-catalog')?.classList.toggle('active', view === 'catalog');
+    window._closeMobileSidebar?.();
     if (view === 'catalog') loadCatalog(1);
 };
 

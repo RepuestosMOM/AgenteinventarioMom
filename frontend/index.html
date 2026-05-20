@@ -5,18 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario | Agente MOM</title>
-    <link rel="stylesheet" href="/static/style.css?v=9">
+    <link rel="stylesheet" href="/static/style.css?v=10">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
+    <!-- Backdrop para sidebar móvil -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <div class="app-container">
 
-        <!-- Sidebar colapsable -->
+        <!-- Sidebar colapsable (desktop) / drawer (móvil) -->
         <aside class="sidebar" id="sidebar">
-
-            <!-- Botón toggle (flecha en el borde derecho) -->
             <button class="sidebar-toggle" id="sidebar-toggle" title="Colapsar menú">
                 <i class="fa-solid fa-chevron-left" id="sidebar-toggle-icon"></i>
             </button>
@@ -60,7 +61,9 @@
             <div id="view-chat" class="view-panel">
                 <header class="chat-header">
                     <div class="agent-info">
-                        <!-- Botón hamburguesa solo en móvil (no necesario con bottom nav, pero útil) -->
+                        <button class="hamburger-btn" id="hamburger-btn" title="Menú">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
                         <img src="/static/logo.png" alt="Agent MOM" class="avatar avatar--header">
                         <div>
                             <h1>Asistente IA MOM</h1>
@@ -80,19 +83,7 @@
                     </div>
                 </header>
 
-                <div class="messages-container" id="chat-box">
-                    <div class="message bot-message">
-                        <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
-                        <div class="msg-bubble">
-                            <p>¡Hola! Soy el Agente Virtual de <strong>Repuestos MOM</strong>. Estoy conectado directamente a nuestra base de Odoo.</p>
-                            <p>Puedes preguntarme por repuestos que necesites, por ejemplo:</p>
-                            <ul>
-                                <li><em>"¿Tienes termostatos para Toyota?"</em></li>
-                                <li><em>"Stock del código 020621057"</em></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+                <div class="messages-container" id="chat-box"></div>
 
                 <div class="input-area">
                     <form id="chat-form">
@@ -109,9 +100,6 @@
                         <i class="fa-solid fa-microphone"></i>
                         <span class="mic-label">Hablar</span>
                     </button>
-                    <div class="footer-text">
-                        La IA puede cometer errores. Verifica códigos críticos antes de generar la orden.
-                    </div>
                 </div>
             </div>
 
@@ -119,6 +107,9 @@
             <div id="view-catalog" class="view-panel" style="display:none;">
                 <header class="chat-header">
                     <div class="agent-info">
+                        <button class="hamburger-btn" id="hamburger-btn-catalog" title="Menú">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
                         <div>
                             <h1>Catálogo Completo</h1>
                             <p class="subtitle" id="catalog-subtitle">Cargando...</p>
@@ -176,31 +167,12 @@
         </div>
     </div>
 
-    <!-- Navegación inferior móvil -->
-    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-        <a href="#" class="mobile-nav-item active" id="mobile-nav-chat"
-           onclick="event.preventDefault(); showView('chat')">
-            <i class="fa-solid fa-robot"></i>
-            <span>Asistente</span>
-        </a>
-        <a href="#" class="mobile-nav-item" id="mobile-nav-catalog"
-           onclick="event.preventDefault(); showView('catalog')">
-            <i class="fa-solid fa-boxes-stacked"></i>
-            <span>Catálogo</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>Estadísticas</span>
-        </a>
-    </nav>
-
-    <!-- Scripts: orden de dependencias — utils primero -->
-    <script src="/static/js/utils.js?v=9"></script>
-    <script src="/static/js/theme.js?v=9"></script>
-    <script src="/static/js/chat.js?v=9"></script>
-    <script src="/static/js/catalog.js?v=9"></script>
-    <script src="/static/js/drawer.js?v=9"></script>
-    <script src="/static/js/voice.js?v=9"></script>
+    <script src="/static/js/utils.js?v=10"></script>
+    <script src="/static/js/theme.js?v=10"></script>
+    <script src="/static/js/chat.js?v=10"></script>
+    <script src="/static/js/catalog.js?v=10"></script>
+    <script src="/static/js/drawer.js?v=10"></script>
+    <script src="/static/js/voice.js?v=10"></script>
 </body>
 
 </html>
