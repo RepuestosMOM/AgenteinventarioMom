@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario | Agente MOM</title>
-    <link rel="stylesheet" href="/static/style.css?v=11">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=12">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -83,14 +83,19 @@
                     </div>
                 </header>
 
-                <div class="messages-container" id="chat-box"></div>
+                <div class="messages-container" id="chat-box">
+                    <div class="message bot-message">
+                        <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
+                        <div class="msg-bubble">
+                            <p>¡Hola! Soy el asistente de <strong>Repuestos MOM</strong>. ¿En qué puedo ayudarte?</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="input-area">
                     <form id="chat-form">
                         <div class="input-wrapper">
-                            <input type="text" id="user-input"
-                                placeholder="Pregunta por disponibilidad de repuestos..."
-                                autocomplete="off">
+                            <input type="text" id="user-input" placeholder="" autocomplete="off">
                             <button type="submit" class="send-btn" id="send-btn" title="Enviar">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </button>
@@ -167,12 +172,12 @@
         </div>
     </div>
 
-    <script src="/static/js/utils.js?v=11"></script>
-    <script src="/static/js/theme.js?v=11"></script>
-    <script src="/static/js/chat.js?v=11"></script>
-    <script src="/static/js/catalog.js?v=11"></script>
-    <script src="/static/js/drawer.js?v=11"></script>
-    <script src="/static/js/voice.js?v=11"></script>
+    <script src="/static/js/utils.js?v=12"></script>
+    <script src="/static/js/theme.js?v=12"></script>
+    <script src="/static/js/chat.js?v=12"></script>
+    <script src="/static/js/catalog.js?v=12"></script>
+    <script src="/static/js/drawer.js?v=12"></script>
+    <script src="/static/js/voice.js?v=12"></script>
 </body>
 
 </html>

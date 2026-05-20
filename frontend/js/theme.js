@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('hamburger-btn-catalog')?.addEventListener('click', openMobileSidebar);
     backdrop?.addEventListener('click', closeMobileSidebar);
 
+    // Evitar que clicks dentro del sidebar cierren el backdrop
+    sidebar.addEventListener('click', (e) => e.stopPropagation());
+
     // Cerrar al seleccionar una vista en móvil
     window._closeMobileSidebar = closeMobileSidebar;
 });
