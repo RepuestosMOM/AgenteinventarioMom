@@ -191,6 +191,52 @@ def _execute_tool(name: str, args: dict) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────
+# ANÁLISIS DE IMAGEN (Gemini Vision)
+# ─────────────────────────────────────────────────────────────────
+def analyze_image(image_bytes: bytes, mime_type: str, user_message: str = "", session_id: str = "default") -> str:
+    """Analiza una imagen de repuesto con Gemini Vision y busca en inventario."""
+    try:
+        chat = _get_or_create_chat(session_id)
+
+        image_part = genai.protos.Part(
+            inline_data=genai.protos.Blob(mime_type=mime_type, data=image_bytes)
+        )
+        text = user_message.strip() or (
+            "Analiza esta imagen. Identifica qué repuesto o pieza automotriz es. "
+            "Luego busca en el inventario si tenemos ese repuesto o uno equivalente."
+        )
+        text_part = genai.protos.Part(text=text)
+
+        response = chat.send_message([image_part, text_part])
+
+        for _ in range(5):
+            function_calls = [
+                part.function_call
+                for part in response.candidates[0].content.parts
+                if hasattr(part, 'function_call') and part.function_call.name
+            ]
+            if not function_calls:
+                break
+            function_responses = []
+            for fc in function_calls:
+                tool_result = _execute_tool(fc.name, dict(fc.args))
+                function_responses.append(
+                    genai.protos.Part(
+                        function_response=genai.protos.FunctionResponse(
+                            name=fc.name, response={"result": tool_result}
+                        )
+                    )
+                )
+            response = chat.send_message(function_responses)
+
+        return response.text
+
+    except Exception as e:
+        log.error("Error en analyze_image: %s", e)
+        return "No pude analizar la imagen. Intenta de nuevo o describe el repuesto en texto."
+
+
+# ─────────────────────────────────────────────────────────────────
 # PUNTO DE ENTRADA PRINCIPAL
 # ─────────────────────────────────────────────────────────────────
 def chat_with_agent(user_message: str, session_id: str = "default") -> str:

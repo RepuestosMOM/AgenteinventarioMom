@@ -12,7 +12,7 @@ import os
 
 load_dotenv()
 
-from backend.agent import chat_with_agent
+from backend.agent import chat_with_agent, analyze_image
 from backend.odoo_client import get_catalog, get_product_detail, serialize_catalog_row
 from backend.voice import transcribe_audio, synthesize_speech
 
@@ -54,6 +54,22 @@ async def api_chat(req: ChatRequest):
     session_id = req.session_id or str(uuid.uuid4())
     response_text = chat_with_agent(req.message, session_id)
     return {"reply": response_text, "session_id": session_id}
+
+
+# ─────────────────────────────────────────────────────────────────
+# RUTAS — IMAGEN (Gemini Vision)
+# ─────────────────────────────────────────────────────────────────
+@app.post("/api/chat/image")
+async def api_chat_image(
+    image: UploadFile = File(...),
+    message: str = "",
+    session_id: str = "",
+):
+    image_bytes = await image.read()
+    mime_type   = image.content_type or "image/jpeg"
+    sid         = session_id or str(uuid.uuid4())
+    reply       = analyze_image(image_bytes, mime_type, message, sid)
+    return {"reply": reply, "session_id": sid}
 
 
 # ─────────────────────────────────────────────────────────────────

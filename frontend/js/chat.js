@@ -95,4 +95,59 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     input.focus();
+
+    // ── Adjuntar imagen / cámara ───────────────────────────────────
+    const imgInput      = document.getElementById('img-input');
+    const attachmentBtn = document.getElementById('attachment-btn');
+
+    attachmentBtn?.addEventListener('click', () => imgInput?.click());
+
+    imgInput?.addEventListener('change', async () => {
+        const file = imgInput.files[0];
+        if (!file) return;
+
+        // Preview en el chat
+        const previewUrl = URL.createObjectURL(file);
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'message user-message';
+        previewDiv.innerHTML = `
+            <div class="msg-bubble msg-bubble--image">
+                <img src="${previewUrl}" alt="imagen adjunta" class="chat-img-preview">
+                ${input.value.trim() ? `<p>${escHtml(input.value.trim())}</p>` : ''}
+            </div>`;
+        chatBox.appendChild(previewDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const userText = input.value.trim();
+        input.value = '';
+        addTypingIndicator();
+
+        try {
+            const fd = new FormData();
+            fd.append('image', file);
+            fd.append('message', userText);
+            fd.append('session_id', sessionId);
+
+            const res  = await fetch('/api/chat/image', { method: 'POST', body: fd });
+            const data = await res.json();
+            removeTypingIndicator();
+
+            if (res.ok) {
+                if (data.session_id) {
+                    sessionId = data.session_id;
+                    localStorage.setItem('mom_session_id', sessionId);
+                }
+                addMessage(data.reply, false);
+                if (window.voiceSpeak) window.voiceSpeak(data.reply);
+            } else {
+                addMessage('Error al analizar la imagen. Intenta de nuevo.', false);
+            }
+        } catch {
+            removeTypingIndicator();
+            addMessage('No se pudo conectar. Revisa tu conexión.', false);
+        } finally {
+            imgInput.value = '';
+            URL.revokeObjectURL(previewUrl);
+        }
+    });
 });

@@ -5,56 +5,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario | Agente MOM</title>
-    <link rel="stylesheet" href="/static/style.css?v=12">
+    <link rel="stylesheet" href="/static/style.css?v=13">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-    <!-- Backdrop para sidebar móvil -->
+
+    <!-- Backdrop sidebar móvil -->
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-    <div class="app-container">
+    <!-- Sidebar FUERA del app-container para evitar conflictos de stacking context -->
+    <aside class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Colapsar menú">
+            <i class="fa-solid fa-chevron-left" id="sidebar-toggle-icon"></i>
+        </button>
 
-        <!-- Sidebar colapsable (desktop) / drawer (móvil) -->
-        <aside class="sidebar" id="sidebar">
-            <button class="sidebar-toggle" id="sidebar-toggle" title="Colapsar menú">
-                <i class="fa-solid fa-chevron-left" id="sidebar-toggle-icon"></i>
-            </button>
+        <div class="logo-area logo-area--centered">
+            <img src="/static/logo.png" alt="MOM Logo" class="sidebar-logo">
+        </div>
 
-            <div class="logo-area logo-area--centered">
-                <img src="/static/logo.png" alt="MOM Logo" class="sidebar-logo">
+        <nav class="menu">
+            <a href="#" class="active" id="nav-chat"
+               onclick="event.preventDefault(); showView('chat')"
+               title="Asistente de Inventario">
+                <i class="fa-solid fa-robot"></i>
+                <span>Asistente de Inventario</span>
+            </a>
+            <a href="#" id="nav-catalog"
+               onclick="event.preventDefault(); showView('catalog')"
+               title="Catálogo Completo">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>Catálogo Completo</span>
+            </a>
+            <a href="#" title="Estadísticas">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Estadísticas</span>
+            </a>
+        </nav>
+
+        <div class="system-status">
+            <p class="status-label">Odoo ERP Connection</p>
+            <div class="status-indicator">
+                <span class="dot"></span>
+                <span class="status-text">Online</span>
             </div>
+        </div>
+    </aside>
 
-            <nav class="menu">
-                <a href="#" class="active" id="nav-chat"
-                   onclick="event.preventDefault(); showView('chat')"
-                   title="Asistente de Inventario">
-                    <i class="fa-solid fa-robot"></i>
-                    <span>Asistente de Inventario</span>
-                </a>
-                <a href="#" id="nav-catalog"
-                   onclick="event.preventDefault(); showView('catalog')"
-                   title="Catálogo Completo">
-                    <i class="fa-solid fa-boxes-stacked"></i>
-                    <span>Catálogo Completo</span>
-                </a>
-                <a href="#" title="Estadísticas">
-                    <i class="fa-solid fa-chart-line"></i>
-                    <span>Estadísticas</span>
-                </a>
-            </nav>
-
-            <div class="system-status">
-                <p class="status-label">Odoo ERP Connection</p>
-                <div class="status-indicator">
-                    <span class="dot"></span>
-                    <span class="status-text">Online</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Area -->
+    <!-- App principal -->
+    <div class="app-container" id="app-container">
         <main class="chat-area">
 
             <!-- ── Vista: Asistente ── -->
@@ -93,8 +93,14 @@
                 </div>
 
                 <div class="input-area">
+                    <!-- Input oculto para imágenes -->
+                    <input type="file" id="img-input" accept="image/*" capture="environment" style="display:none">
+
                     <form id="chat-form">
                         <div class="input-wrapper">
+                            <button type="button" class="attachment-btn" id="attachment-btn" title="Adjuntar foto">
+                                <i class="fa-solid fa-camera"></i>
+                            </button>
                             <input type="text" id="user-input" placeholder="" autocomplete="off">
                             <button type="submit" class="send-btn" id="send-btn" title="Enviar">
                                 <i class="fa-solid fa-paper-plane"></i>
@@ -143,11 +149,7 @@
                             </tr>
                         </thead>
                         <tbody id="catalog-body">
-                            <tr>
-                                <td colspan="5" style="text-align:center;padding:32px;">
-                                    Cargando catálogo...
-                                </td>
-                            </tr>
+                            <tr><td colspan="5" style="text-align:center;padding:32px;">Cargando catálogo...</td></tr>
                         </tbody>
                     </table>
                     <div class="catalog-pagination" id="catalog-pagination"></div>
@@ -162,9 +164,7 @@
         <div class="drawer-panel">
             <div class="drawer-header">
                 <h2 id="drawer-name">—</h2>
-                <button class="icon-btn" onclick="closeDrawer()">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <button class="icon-btn" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="drawer-body" id="drawer-body">
                 <p class="drawer-loading">Cargando...</p>
@@ -172,12 +172,11 @@
         </div>
     </div>
 
-    <script src="/static/js/utils.js?v=12"></script>
-    <script src="/static/js/theme.js?v=12"></script>
-    <script src="/static/js/chat.js?v=12"></script>
-    <script src="/static/js/catalog.js?v=12"></script>
-    <script src="/static/js/drawer.js?v=12"></script>
-    <script src="/static/js/voice.js?v=12"></script>
+    <script src="/static/js/utils.js?v=13"></script>
+    <script src="/static/js/theme.js?v=13"></script>
+    <script src="/static/js/chat.js?v=13"></script>
+    <script src="/static/js/catalog.js?v=13"></script>
+    <script src="/static/js/drawer.js?v=13"></script>
+    <script src="/static/js/voice.js?v=13"></script>
 </body>
-
 </html>

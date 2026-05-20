@@ -35,8 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!sidebar) return;
 
+    const appContainer = document.getElementById('app-container');
+
     const applyCollapsed = (collapsed) => {
         sidebar.classList.toggle('sidebar--collapsed', collapsed);
+        if (appContainer && window.innerWidth > 768) {
+            appContainer.style.marginLeft = collapsed ? '64px' : '260px';
+        }
         if (toggleIcon) {
             toggleIcon.className = collapsed
                 ? 'fa-solid fa-chevron-right'
